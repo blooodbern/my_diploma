@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">bloodbern_diploma</string>
+    <string name="navigation_drawer_open">Відкрити панель навігації</string>
+    <string name="navigation_drawer_close">Закрити панель навігації</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Опис</string>
+    <string name="action_settings">Налаштування</string>
+
+    <string name="menu_home">Домашня сторінка</string>
+    <string name="menu_gallery">Галерея</string>
+    <string name="menu_slideshow">Слайдшоу</string>
+</resources>
