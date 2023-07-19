@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">diploma</string>
+    <string name="navigation_drawer_open">Відкрити</string>
+    <string name="navigation_drawer_close">Закрити</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Налаштування</string>
+
+    <string name="menu_home">Головна</string>
+    <string name="menu_gallery">Галерея</string>
+    <string name="menu_slideshow">Слайдшоу</string>
+</resources>
