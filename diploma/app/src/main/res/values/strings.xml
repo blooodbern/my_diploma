@@ -10,4 +10,6 @@
     <string name="menu_home">Home</string>
     <string name="menu_settings">Settings</string>
 
+    <string name="description_hint">add description</string>
+
 </resources>
