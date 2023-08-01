@@ -28,10 +28,9 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:layout_weight="1"
-            android:dividerHeight="1dp"
             tools:listitem="@layout/home_list_model" />
 
-        <!-- Кнопка для додавання нових рядків -->
+
         <Button
             android:id="@+id/btnAddItem"
             android:layout_width="wrap_content"
@@ -43,12 +42,13 @@
             android:text="+" />
 
         <LinearLayout
+            android:id="@+id/container_ft"
             android:layout_width="match_parent"
             android:layout_height="80dp"
-            android:layout_marginBottom="200dp"
+            android:layout_marginBottom="10dp"
             android:layout_weight="1"
             android:orientation="horizontal"
-            android:visibility="gone"
+            android:visibility="visible"
             tools:visibility="visible">
 
             <androidx.cardview.widget.CardView
@@ -84,7 +84,7 @@
                             android:layout_height="match_parent"
                             android:background="@color/noColor"
                             android:clickable="true"
-                            app:srcCompat="@drawable/ic_show_more_36" />
+                            app:srcCompat="@drawable/ic_show_less_36" />
                     </androidx.cardview.widget.CardView>
 
                     <androidx.cardview.widget.CardView
@@ -112,6 +112,25 @@
 
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/ft_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="visible"
+            tools:visibility="visible">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewFT"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="20dp"
+                android:layout_weight="1"
+                tools:listitem="@layout/homeft_list_model" />
+
         </LinearLayout>
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

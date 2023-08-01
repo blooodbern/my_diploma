@@ -2,6 +2,7 @@ package com.example.diploma.ui.home
 
 import android.content.Context
 import android.os.SystemClock
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.View.GONE
@@ -18,6 +19,11 @@ import com.example.diploma.R
 
 class ListAdapter(private val data: List<ListItem>, private val context: Context) : RecyclerView.Adapter<ListAdapter.ViewHolder>() {
 
+    // *******************
+    private val isButtonPressedList = MutableList(100) { false }
+    private var INDEX = 0
+    // *******************
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.home_list_model, parent, false)
         return ViewHolder(view)
@@ -29,6 +35,7 @@ class ListAdapter(private val data: List<ListItem>, private val context: Context
         setCursor(holder, position)
         editDescription(holder, item)
         play(holder, item, position)
+        stopChronometer(holder, item, position)
     }
 
     override fun getItemCount(): Int {
@@ -40,7 +47,7 @@ class ListAdapter(private val data: List<ListItem>, private val context: Context
         holder.butStop.setColorFilter(ContextCompat.getColor(context, R.color.custom2))
         holder.butPlayPause.setColorFilter(ContextCompat.getColor(context, R.color.custom2))
         holder.butDescr.setColorFilter(ContextCompat.getColor(context, R.color.custom2))
-       // holder.chronometer.setTextColor(ContextCompat.getColor(context, R.color.custom4))
+       //listListAdapt holder.chronometer.setTextColor(ContextCompat.getColor(context, R.color.custom4))
     }
 
     private fun setCursor(holder: ViewHolder, position: Int){
@@ -49,6 +56,11 @@ class ListAdapter(private val data: List<ListItem>, private val context: Context
         } else {
             holder.etTask.clearFocus()
         }
+
+
+        //********
+        Log.d("TAG", "Main adapter: data.size = ${data.size}")
+
     }
 
     private fun editDescription(holder: ViewHolder, item: ListItem){
@@ -97,16 +109,34 @@ class ListAdapter(private val data: List<ListItem>, private val context: Context
     private fun startChronometer(holder: ViewHolder, position: Int) {
         holder.chronometer.base = SystemClock.elapsedRealtime() - data[position].currentTime
         holder.chronometer.start()
+
+        //********
+        Log.d("TAG", "Main adapter (position): item(${position}) = ${isButtonPressedList[position]}")
+
     }
 
     private fun pauseChronometer(holder: ViewHolder, position: Int) {
         holder.chronometer.stop()
         data[position].currentTime = SystemClock.elapsedRealtime() - holder.chronometer.base
+
+        //********
+        Log.d("TAG", "Main adapter: item(${INDEX}) = ${isButtonPressedList[INDEX]}")
+        Log.d("TAG", "Main adapter (position): item(${position}) = ${isButtonPressedList[position]}")
+
     }
 
     private fun stopChronometer(holder: ViewHolder, item: ListItem, position: Int) {
         holder.butStop.setOnClickListener {
             item.isStop = !item.isStop
+
+            // *****************
+
+            INDEX = position
+            isButtonPressedList[INDEX] = true
+            STORAGE.IsPressed = true
+
+            Log.d("TAG", "Main adapter: item(${INDEX}) = ${isButtonPressedList[INDEX]}")
+            Log.d("TAG", "Main adapter (position): item(${position}) = ${isButtonPressedList[position]}")
         }
     }
 

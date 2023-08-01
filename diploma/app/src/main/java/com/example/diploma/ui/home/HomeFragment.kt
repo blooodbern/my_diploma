@@ -1,17 +1,13 @@
 package com.example.diploma.ui.home
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.diploma.R
-import com.example.diploma.databinding.FragmentHomeBinding
 import com.example.diploma.databinding.ListHomeBinding
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -20,15 +16,15 @@ import java.util.Locale
 class HomeFragment : Fragment() {
 
     private lateinit var adapter: ListAdapter
-    private lateinit var recyclerView: RecyclerView
+    private lateinit var adapterFT: ListFtAdapter
     private val dataList = mutableListOf<ListItem>()
+    private val dataListFT = mutableListOf<ListItem>()
+
+    private lateinit var formattedDate: String
 
 
-    //private var _binding: FragmentHomeBinding? = null
     private var _binding: ListHomeBinding? = null
 
-    // This property is only valid between onCreateView and
-    // onDestroyView.
     private val binding get() = _binding!!
 
     override fun onCreateView(
@@ -36,9 +32,6 @@ class HomeFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val homeViewModel =
-            ViewModelProvider(this).get(HomeViewModel::class.java)
-
         _binding = ListHomeBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
@@ -48,13 +41,18 @@ class HomeFragment : Fragment() {
 
         binding.btnAddItem.setOnClickListener {
             addNewItemToList()
+
+            //***
+            Log.d("TAG", "Fragment: IsPressed = ${STORAGE.IsPressed}")
+            if(STORAGE.IsPressed) {
+                addNewItemToFTList()
+                Log.d("TAG", "Fragment: we are after addNewItemToFTList()")
+                STORAGE.IsPressed = false
+                Log.d("TAG", "Fragment: now IsPressed = ${STORAGE.IsPressed}")
+            }
         }
 
-        /*
-        val textView: TextView = binding.textHome
-        homeViewModel.text.observe(viewLifecycleOwner) {
-            textView.text = it
-        }*/
+
         return root
     }
 
@@ -62,13 +60,18 @@ class HomeFragment : Fragment() {
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         adapter = ListAdapter(dataList, requireContext())
         binding.recyclerView.adapter = adapter
+
+        binding.recyclerViewFT.layoutManager = LinearLayoutManager(requireContext())
+        adapterFT = ListFtAdapter(dataListFT, requireContext())
+        binding.recyclerViewFT.adapter = adapterFT
     }
 
     private fun setCurDate(){
         val currentDate = Calendar.getInstance().time
         val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
-        val formattedDate = dateFormat.format(currentDate)
+        formattedDate = dateFormat.format(currentDate)
         binding.curDate.text = formattedDate
+
     }
 
     private fun addNewItemToList(){
@@ -76,6 +79,16 @@ class HomeFragment : Fragment() {
         dataList.add(newItem)
         adapter.notifyItemInserted(dataList.size - 1)
         binding.recyclerView.scrollToPosition(dataList.size - 1)
+    }
+
+    private fun addNewItemToFTList(){
+        val newItem = ListItem("")
+        dataListFT.add(newItem)
+        adapterFT.notifyItemInserted(dataListFT.size - 1)
+        binding.recyclerViewFT.scrollToPosition(dataListFT.size - 1)
+
+        //****
+        Log.d("TAG", "Fragment: we are in addNewItemToFTList()")
     }
 
     override fun onDestroyView() {

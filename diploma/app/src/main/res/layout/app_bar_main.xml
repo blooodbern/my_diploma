@@ -18,7 +18,9 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="@color/purple_800"
-            app:popupTheme="@style/Theme.Diploma.PopupOverlay"/>
+            app:popupTheme="@style/Theme.Diploma.PopupOverlay"
+            app:title="xx.xx.xxxx"
+            app:titleMarginStart="115dp" />
 
 
     </com.google.android.material.appbar.AppBarLayout>
