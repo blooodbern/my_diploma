@@ -9,4 +9,11 @@
     <string name="menu_home">Головна</string>
     <string name="menu_settings">Налаштування</string>
     <string name="description_hint">додати опис</string>
+    <string name="finished_str">виконане</string>
+    <string name="alertDialog_cancel">Скасувати</string>
+    <string name="alertDialog_title">Завершити завдання</string>
+    <string name="alertDialog_unsatis">Незадовільно</string>
+    <string name="alertDialog_partly">Частково</string>
+    <string name="alertDialog_success">Успішно</string>
+    <string name="alertDialog_msg">Завдання виконано? Оберіть відповідний статус:</string>
 </resources>

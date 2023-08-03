@@ -11,6 +11,14 @@
     <string name="menu_settings">Settings</string>
 
     <string name="description_hint">add description</string>
-    <!-- TODO: Remove or change this placeholder text -->
+    <string name="finished_str">finished tasks</string>
+
+    <string name="alertDialog_title">Finish the task</string>
+    <string name="alertDialog_msg">Is the task completed? Select the appropriate status:</string>
+    <string name="alertDialog_cancel">Cancel</string>
+    <string name="alertDialog_unsatis">Unsatisfactory</string>
+    <string name="alertDialog_partly">Partially</string>
+    <string name="alertDialog_success">Success</string>
+
 
 </resources>

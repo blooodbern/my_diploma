@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Перший шар з заокругленими краями -->
+    <item android:drawable="@drawable/no_rounded_frame" />
+
+    <!-- Другий шар з гострими краями -->
+    <item
+        android:drawable="@drawable/rounded_frame"
+        android:left="5dp"
+        android:right="5dp"
+        android:top="5dp"
+        android:bottom="5dp"
+    />
+</layer-list>

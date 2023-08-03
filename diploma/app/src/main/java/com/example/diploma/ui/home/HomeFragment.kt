@@ -1,13 +1,19 @@
 package com.example.diploma.ui.home
 
+import android.app.AlertDialog
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.diploma.R
 import com.example.diploma.databinding.ListHomeBinding
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -19,6 +25,9 @@ class HomeFragment : Fragment() {
     private lateinit var adapterFT: ListFtAdapter
     private val dataList = mutableListOf<ListItem>()
     private val dataListFT = mutableListOf<ListItem>()
+
+    private val handler = Handler(Looper.getMainLooper())
+    private val pollingIntervalMillis: Long = 1000
 
     private lateinit var formattedDate: String
 
@@ -37,24 +46,17 @@ class HomeFragment : Fragment() {
 
         init()
         setCurDate()
-
-
-        binding.btnAddItem.setOnClickListener {
-            addNewItemToList()
-
-            //***
-            Log.d("TAG", "Fragment: IsPressed = ${STORAGE.IsPressed}")
-            if(STORAGE.IsPressed) {
-                addNewItemToFTList()
-                Log.d("TAG", "Fragment: we are after addNewItemToFTList()")
-                STORAGE.IsPressed = false
-                Log.d("TAG", "Fragment: now IsPressed = ${STORAGE.IsPressed}")
-            }
-        }
+        AddBtnClicked()
 
 
         return root
     }
+
+    override fun onResume() {
+        super.onResume()
+        startPolling()
+    }
+
 
     private fun init(){
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -74,6 +76,13 @@ class HomeFragment : Fragment() {
 
     }
 
+    private fun AddBtnClicked(){
+        binding.btnAddItem.setOnClickListener {
+            addNewItemToList()
+            fillFinishedTasksLis()
+        }
+    }
+
     private fun addNewItemToList(){
         val newItem = ListItem("")
         dataList.add(newItem)
@@ -86,13 +95,77 @@ class HomeFragment : Fragment() {
         dataListFT.add(newItem)
         adapterFT.notifyItemInserted(dataListFT.size - 1)
         binding.recyclerViewFT.scrollToPosition(dataListFT.size - 1)
+    }
 
-        //****
-        Log.d("TAG", "Fragment: we are in addNewItemToFTList()")
+    //***********
+    private fun fillFinishedTasksLis(){
+        if(STORAGE.IsPressed) {
+            customConfirmDialog()
+            addNewItemToFTList()
+            STORAGE.IsPressed = false
+        }
+    }
+
+    private fun startPolling() {
+        handler.post(pollRunnable)
+    }
+
+    private fun stopPolling() {
+        handler.removeCallbacks(pollRunnable)
+    }
+
+    private val pollRunnable = object : Runnable {
+        override fun run() {
+            fillFinishedTasksLis()
+            handler.postDelayed(this, pollingIntervalMillis)
+        }
+    }
+
+    private fun customConfirmDialog(){
+        val alertDialogView = LayoutInflater.from(requireContext()).inflate(R.layout.custom_alert_dialog, null)
+
+        val alertDialogBuilder = AlertDialog.Builder(requireContext())
+        alertDialogBuilder.setView(alertDialogView)
+        val alertDialog = alertDialogBuilder.create()
+
+        val cancelButton = alertDialogView.findViewById<TextView>(R.id.buttonCancel)
+        val unsatisButton = alertDialogView.findViewById<TextView>(R.id.buttonUnsatisfactory)
+        val partlyButton = alertDialogView.findViewById<TextView>(R.id.buttonPartially)
+        val successButton = alertDialogView.findViewById<TextView>(R.id.buttonSuccess)
+
+        cancelButton.setOnClickListener {
+
+            alertDialog.dismiss()
+        }
+
+        unsatisButton.setOnClickListener {
+
+            alertDialog.dismiss()
+        }
+
+        partlyButton.setOnClickListener {
+
+            alertDialog.dismiss()
+        }
+
+        successButton.setOnClickListener {
+
+            alertDialog.dismiss()
+        }
+
+        alertDialog.show()
+
+    }
+    //***********
+
+    override fun onPause() {
+        super.onPause()
+        stopPolling()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+        stopPolling()
     }
 }

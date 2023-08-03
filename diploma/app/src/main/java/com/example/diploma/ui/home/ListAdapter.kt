@@ -56,11 +56,6 @@ class ListAdapter(private val data: List<ListItem>, private val context: Context
         } else {
             holder.etTask.clearFocus()
         }
-
-
-        //********
-        Log.d("TAG", "Main adapter: data.size = ${data.size}")
-
     }
 
     private fun editDescription(holder: ViewHolder, item: ListItem){
@@ -109,20 +104,11 @@ class ListAdapter(private val data: List<ListItem>, private val context: Context
     private fun startChronometer(holder: ViewHolder, position: Int) {
         holder.chronometer.base = SystemClock.elapsedRealtime() - data[position].currentTime
         holder.chronometer.start()
-
-        //********
-        Log.d("TAG", "Main adapter (position): item(${position}) = ${isButtonPressedList[position]}")
-
     }
 
     private fun pauseChronometer(holder: ViewHolder, position: Int) {
         holder.chronometer.stop()
         data[position].currentTime = SystemClock.elapsedRealtime() - holder.chronometer.base
-
-        //********
-        Log.d("TAG", "Main adapter: item(${INDEX}) = ${isButtonPressedList[INDEX]}")
-        Log.d("TAG", "Main adapter (position): item(${position}) = ${isButtonPressedList[position]}")
-
     }
 
     private fun stopChronometer(holder: ViewHolder, item: ListItem, position: Int) {
@@ -134,9 +120,6 @@ class ListAdapter(private val data: List<ListItem>, private val context: Context
             INDEX = position
             isButtonPressedList[INDEX] = true
             STORAGE.IsPressed = true
-
-            Log.d("TAG", "Main adapter: item(${INDEX}) = ${isButtonPressedList[INDEX]}")
-            Log.d("TAG", "Main adapter (position): item(${position}) = ${isButtonPressedList[position]}")
         }
     }
 
