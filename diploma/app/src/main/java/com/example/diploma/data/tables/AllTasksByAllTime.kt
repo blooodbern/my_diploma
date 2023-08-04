@@ -17,5 +17,7 @@ data class AllTasksByAllTime (
     @ColumnInfo(name = "btn_status")
     var btn_status: Int,
     @ColumnInfo(name = "time")
-    var time: Long
+    var time: Long,
+    @ColumnInfo(name = "task_status")
+    var task_status: String
     )

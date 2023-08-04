@@ -3,6 +3,7 @@ package com.example.diploma.presentation.adapters
 import android.content.Context
 import android.os.Build
 import android.os.SystemClock
+import android.provider.Settings.Global.getString
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -24,7 +25,7 @@ import com.example.diploma.data.tables.AllTasksByAllTime
 import java.time.LocalDate
 
 
-class ListAdapter(private val data: List<ListItem>, private val context: Context) : RecyclerView.Adapter<ListAdapter.ViewHolder>() {
+class ListAdapter(private val data: MutableList<ListItem>, private val context: Context) : RecyclerView.Adapter<ListAdapter.ViewHolder>() {
 
     // *******************
     private val isButtonPressedList = MutableList(100) { false }
@@ -95,40 +96,60 @@ class ListAdapter(private val data: List<ListItem>, private val context: Context
     @RequiresApi(Build.VERSION_CODES.O)
     private fun play(holder: ViewHolder, item: ListItem, position: Int){
         holder.butPlayPause.setOnClickListener {
-            item.isRunning = !item.isRunning
-            changePlayButt(holder, item, position)
-            Log.d("TAG", "isRunning = ${item.isRunning}")
-            //***********
-            updateDatabase(holder, item, item.isRunning)
+            val userTask = holder.etTask.text.toString()
+            if(userTask!=""){
+                item.isRunning = !item.isRunning
+                changePlayButt(holder, item, position)
+                Log.d("TAG", "isRunning = ${item.isRunning}")
+                //***********
+                updateDatabase(holder, item, item.isRunning, item.isStop)
+            }
         }
     }
 
     //******************
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun updateDatabase(holder: ViewHolder, item: ListItem, isRunning: Boolean){
-        var btnStatus = STORAGE.IS_RUNNING
-        if (item.isRunning){btnStatus = STORAGE.IS_RUNNING}
-        else{btnStatus = STORAGE.ON_PAUSE}
+    private fun updateDatabase(holder: ViewHolder, item: ListItem, isRunning: Boolean, isStop: Boolean){
         val userTask = holder.etTask.text.toString()
-        val userDescription = holder.etDescription.text.toString()
-        val time = holder.chronometer.base
-        val curDate = getCurDate()
-        val task =AllTasksByAllTime(
-            null,
-            curDate,
-            userTask,
-            userDescription,
-            btnStatus,
-            time
-        )
-        var thread1 = Thread {
-            val database = DatabaseMain.getDatabase(context)
-            if(database.getDaoMain().checkIfTaskExists(userTask, curDate) > 0) {
-                database.getDaoMain().changeTaskStatus(userTask, curDate, btnStatus)
-            } else database.getDaoMain().insertItem(task)
+        if(userTask!=""){
+            val userDescription = holder.etDescription.text.toString()
+            val time = item.currentTime
+            val curDate = getCurDate()
+            var btnStatus = STORAGE.IS_RUNNING
+            var taskStatus:String = ""
+            if (item.isStop){
+                btnStatus = STORAGE.STOP
+                STORAGE.curTask = userTask
+                taskStatus = context.getString(R.string.alertDialog_success)
+            }
+            else if (item.isRunning){
+                btnStatus = STORAGE.IS_RUNNING
+                taskStatus = context.getString(R.string.task_inProcess)
+            }
+            else{
+                btnStatus = STORAGE.ON_PAUSE
+                taskStatus = context.getString(R.string.task_partly)
+            }
+            val task =AllTasksByAllTime(
+                null,
+                curDate,
+                userTask,
+                userDescription,
+                btnStatus,
+                time,
+                taskStatus
+            )
+            var thread1 = Thread {
+                val database = DatabaseMain.getDatabase(context)
+                if(database.getDaoMain().checkIfTaskExists(userTask, curDate) > 0) {
+                    database.getDaoMain().changeBtnStatus(userTask, curDate, btnStatus)
+                    database.getDaoMain().changeTaskStatus(userTask, curDate, taskStatus)
+                    database.getDaoMain().changeTaskTime(userTask, curDate, time)
+                } else database.getDaoMain().insertItem(task)
+            }
+            thread1.start()
+            thread1.join()
         }
-        thread1.start()
-        thread1.join()
         showAllTasksTable()
     }
 
@@ -138,13 +159,11 @@ class ListAdapter(private val data: List<ListItem>, private val context: Context
             val database = DatabaseMain.getDatabase(context)
             val items: List<AllTasksByAllTime> = database.getDaoMain().getAllTasks()
             for (item in items){
-                Log.d("TAG", "ID: ${item.id} DATA: ${item.date} TASK: ${item.task} STATUS: ${item.btn_status} TIME: ${item.time}")
+                Log.d("TAG", "ID: ${item.id} DATA: ${item.date} TASK: ${item.task} STATUS: ${item.btn_status} TIME: ${item.time} STATUS: ${item.task_status}")
             }
         }
         thread2.start()
         thread2.join()
-
-
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -173,15 +192,25 @@ class ListAdapter(private val data: List<ListItem>, private val context: Context
         data[position].currentTime = SystemClock.elapsedRealtime() - holder.chronometer.base
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun stopChronometer(holder: ViewHolder, item: ListItem, position: Int) {
         holder.butStop.setOnClickListener {
-            item.isStop = !item.isStop
+            val time = item.currentTime
+            Log.d("TAG", "IsPressed up = ${STORAGE.IsPressed}")
+            Log.d("TAG", "currentTime = ${time}")
 
-            // *****************
-
-            INDEX = position
-            isButtonPressedList[INDEX] = true
-            STORAGE.IsPressed = true
+            if(time == 0L){
+                data.removeAt(position)
+                notifyItemRemoved(position)
+            }
+            else{
+                item.isStop = !item.isStop
+                Log.d("TAG", "i'm in 'else'")
+                // *****************
+                updateDatabase(holder, item, item.isRunning, item.isStop)
+                STORAGE.IsPressed = true
+            }
+            Log.d("TAG", "IsPressed  above = ${STORAGE.IsPressed}")
         }
     }
 

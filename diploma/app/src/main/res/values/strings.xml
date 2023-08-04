@@ -21,4 +21,11 @@
     <string name="alertDialog_success">Success</string>
 
 
+    <string name="task_notStarted">not started</string>
+    <string name="task_inProcess">in process</string>
+    <string name="task_unsatis">unsatisfactory result</string>
+    <string name="task_partly">partly completed</string>
+    <string name="task_success">finished successfully</string>
+
+
 </resources>

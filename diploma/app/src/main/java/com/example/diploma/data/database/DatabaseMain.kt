@@ -18,7 +18,7 @@ abstract class DatabaseMain: RoomDatabase() {
             return Room.databaseBuilder(
                 context.applicationContext,
                 DatabaseMain::class.java,
-                "BloodbernDiplomaDB"
+                "BloodbernDiplomaDB2"
             ).build()
         }
     }

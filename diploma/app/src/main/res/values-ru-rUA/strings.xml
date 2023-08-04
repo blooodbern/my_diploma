@@ -16,4 +16,10 @@
     <string name="alertDialog_partly">Частково</string>
     <string name="alertDialog_success">Успішно</string>
     <string name="alertDialog_msg">Завдання виконано? Оберіть відповідний статус:</string>
+
+    <string name="task_inProcess">в процесі</string>
+    <string name="task_unsatis">незадовільний результат</string>
+    <string name="task_partly">завершено частково</string>
+    <string name="task_success">успішно виконано</string>
+    <string name="task_notStarted">не розпочато</string>
 </resources>
