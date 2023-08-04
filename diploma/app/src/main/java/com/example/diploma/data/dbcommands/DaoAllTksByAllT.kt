@@ -10,10 +10,14 @@ import kotlinx.coroutines.flow.Flow
 interface DaoAllTksByAllT {
     @Insert
     fun insertItem(allTasks: AllTasksByAllTime)
-    @Query("SELECT COUNT(*) FROM all_tasks_by_all_time WHERE task = :userTask")
-    fun checkIfTaskExists(userTask: String): Int
+    @Query("SELECT COUNT(*) FROM all_tasks_by_all_time WHERE (task = :userTask AND date = :userDate)")
+    fun checkIfTaskExists(userTask: String, userDate: Long): Int
     @Query("SELECT * FROM all_tasks_by_all_time WHERE date = :userDate")
     fun getAllTasksByDate(userDate: Long): Flow<List<AllTasksByAllTime>>
     @Query("SELECT * FROM all_tasks_by_all_time WHERE date = :userDate AND btn_status = :userBtnStatus")
     fun getAllTasksByDateAndStatus(userDate: Long, userBtnStatus: Int): Flow<List<AllTasksByAllTime>>
+    @Query("UPDATE all_tasks_by_all_time SET btn_status = :userStatus WHERE (task = :userTask AND date = :userDate)")
+    fun changeTaskStatus(userTask: String, userDate: Long, userStatus: Int)
+    @Query("SELECT * FROM all_tasks_by_all_time")
+    fun getAllTasks(): List<AllTasksByAllTime>
 }
