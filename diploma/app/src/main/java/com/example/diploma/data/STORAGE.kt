@@ -1,4 +1,4 @@
-package com.example.diploma.ui.home
+package com.example.diploma.data
 
 class STORAGE {
     companion object{

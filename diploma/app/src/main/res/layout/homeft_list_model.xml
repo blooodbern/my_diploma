@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:backgroundTint="@color/noColor"
-    tools:context=".ui.home.HomeFragment">
+    tools:context=".presentation.fragments.HomeFragment">
 
     <androidx.cardview.widget.CardView
         android:id="@+id/finished_task"

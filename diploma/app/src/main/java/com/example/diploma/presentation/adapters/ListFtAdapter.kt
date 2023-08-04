@@ -1,7 +1,6 @@
-package com.example.diploma.ui.home
+package com.example.diploma.presentation.adapters
 
 import android.content.Context
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,6 +8,7 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.diploma.R
+import com.example.diploma.domain.ListItem
 
 class ListFtAdapter (private val data: List<ListItem>, private val context: Context):
     RecyclerView.Adapter<ListFtAdapter.ViewHolder>()
@@ -25,7 +25,7 @@ class ListFtAdapter (private val data: List<ListItem>, private val context: Cont
 
     override fun getItemCount(): Int = data.size
 
-    private fun setupItem(holder: ListFtAdapter.ViewHolder, item: ListItem){
+    private fun setupItem(holder: ViewHolder, item: ListItem){
         holder.ftName.setText(item.text)
     }
 

@@ -1,4 +1,4 @@
-package com.example.diploma.ui.settings
+package com.example.diploma.domain
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData

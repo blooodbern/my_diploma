@@ -1,4 +1,4 @@
-package com.example.diploma.ui.settings
+package com.example.diploma.presentation.fragments
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -7,10 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.lifecycle.ViewModelProvider
-import com.example.diploma.R
-import com.example.diploma.databinding.FragmentHomeBinding
 import com.example.diploma.databinding.FragmentSettingsBinding
-import com.example.diploma.ui.home.HomeViewModel
+import com.example.diploma.domain.SettingsViewModel
 
 
 class SettingsFragment : Fragment() {
