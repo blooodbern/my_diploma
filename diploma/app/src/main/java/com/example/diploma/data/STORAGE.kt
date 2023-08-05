@@ -8,6 +8,7 @@ class STORAGE {
     companion object{
         var IsPressed = false
         var curTask = ""
+        var curDate:Long = 0L
         const val IS_RUNNING = 1
         const val ON_PAUSE = 2
         const val STOP = 3

@@ -30,6 +30,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
     // *******************
     private val isButtonPressedList = MutableList(100) { false }
     private var INDEX = 0
+    private var choronoTime:Long = 0L
     // *******************
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -43,7 +44,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         setupItem(holder, item)
         setCursor(holder, position)
         editDescription(holder, item)
-        play(holder, item, position)
+        onBtnPlayPressed(holder, item, position)
         stopChronometer(holder, item, position)
     }
 
@@ -52,7 +53,20 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
     }
 
     private fun setupItem(holder: ViewHolder, item: ListItem) {
-        holder.etTask.setText(item.text)
+        if(item.returnItem){
+            var thread4 = Thread {
+                val database = DatabaseMain.getDatabase(context)
+                val tasks: List<AllTasksByAllTime> = database.getDaoMain().getItem(STORAGE.curTask, STORAGE.curDate)
+                for (task in tasks){
+                    holder.etTask.setText(task.task)
+                    choronoTime = task.time
+                    holder.chronometer.base = SystemClock.elapsedRealtime() - choronoTime
+                }
+            }
+            thread4.start()
+            thread4.join()
+        }
+        else holder.etTask.setText(item.text)
         holder.butStop.setColorFilter(ContextCompat.getColor(context, R.color.custom2))
         holder.butPlayPause.setColorFilter(ContextCompat.getColor(context, R.color.custom2))
         holder.butDescr.setColorFilter(ContextCompat.getColor(context, R.color.custom2))
@@ -95,7 +109,6 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun play(holder: ViewHolder, item: ListItem, position: Int){
-        holder.butPlayPause.setOnClickListener {
             val userTask = holder.etTask.text.toString()
             if(userTask!=""){
                 item.isRunning = !item.isRunning
@@ -104,7 +117,11 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
                 //***********
                 updateDatabase(holder, item, item.isRunning, item.isStop)
             }
-        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun onBtnPlayPressed(holder: ViewHolder, item: ListItem, position: Int){
+        holder.butPlayPause.setOnClickListener {play(holder, item, position)}
     }
 
     //******************
@@ -117,10 +134,12 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
             val curDate = getCurDate()
             var btnStatus = STORAGE.IS_RUNNING
             var taskStatus:String = ""
+            STORAGE.curDate = curDate
             if (item.isStop){
                 btnStatus = STORAGE.STOP
                 STORAGE.curTask = userTask
-                taskStatus = context.getString(R.string.alertDialog_success)
+                taskStatus = context.getString(R.string.task_success)
+                if(time == 0L) taskStatus = context.getString(R.string.task_notStarted)
             }
             else if (item.isRunning){
                 btnStatus = STORAGE.IS_RUNNING
@@ -175,11 +194,17 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
     private fun changePlayButt(holder: ViewHolder, item: ListItem, position: Int){
         if (item.isRunning) {
             holder.butPlayPause.setImageResource(R.drawable.ic_pause_36)
-            startChronometer(holder, position)
+            if(item.returnItem){continueChronometer(holder)}
+            else startChronometer(holder, position)
         } else {
             holder.butPlayPause.setImageResource(R.drawable.ic_play_36)
             pauseChronometer(holder, position)
         }
+    }
+
+    private fun continueChronometer(holder: ViewHolder){
+        holder.chronometer.base = SystemClock.elapsedRealtime() - choronoTime
+        holder.chronometer.start()
     }
 
     private fun startChronometer(holder: ViewHolder, position: Int) {
@@ -195,23 +220,32 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun stopChronometer(holder: ViewHolder, item: ListItem, position: Int) {
         holder.butStop.setOnClickListener {
-            val time = item.currentTime
+            var time = item.currentTime
             Log.d("TAG", "IsPressed up = ${STORAGE.IsPressed}")
-            Log.d("TAG", "currentTime = ${time}")
-
-            if(time == 0L){
-                data.removeAt(position)
-                notifyItemRemoved(position)
+            Log.d("TAG", "isRunning in  stopChronometer() up = ${item.isRunning}")
+            Log.d("TAG", "currentTime up = ${time}")
+            if(item.isRunning) {
+                play(holder, item, position)
             }
-            else{
+            time = item.currentTime
+            Log.d("TAG", "currentTime above = ${time}")
+            if(time != 0L){
                 item.isStop = !item.isStop
                 Log.d("TAG", "i'm in 'else'")
-                // *****************
-                updateDatabase(holder, item, item.isRunning, item.isStop)
                 STORAGE.IsPressed = true
+                STORAGE.curTask = item.text
+                updateDatabase(holder, item, item.isRunning, item.isStop)
             }
+            removeItem(position)
             Log.d("TAG", "IsPressed  above = ${STORAGE.IsPressed}")
+            Log.d("TAG", "isRunning in  stopChronometer() above = ${item.isRunning}")
         }
+    }
+
+    private fun removeItem(position: Int){
+        data.removeAt(position)
+        notifyItemRemoved(position)
+        notifyDataSetChanged()
     }
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {

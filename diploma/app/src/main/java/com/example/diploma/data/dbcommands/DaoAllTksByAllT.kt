@@ -24,4 +24,8 @@ interface DaoAllTksByAllT {
     fun changeTaskTime(userTask: String, userDate: Long, userTime: Long)
     @Query("SELECT * FROM all_tasks_by_all_time")
     fun getAllTasks(): List<AllTasksByAllTime>
+    @Query("SELECT * FROM all_tasks_by_all_time WHERE id = (SELECT MAX(id) FROM all_tasks_by_all_time)")
+    fun getLastItem(): List<AllTasksByAllTime>
+    @Query("SELECT * FROM all_tasks_by_all_time WHERE (task = :userTask AND date = :userDate)")
+    fun getItem(userTask: String, userDate: Long): List<AllTasksByAllTime>
 }

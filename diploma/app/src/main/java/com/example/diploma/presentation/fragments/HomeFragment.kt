@@ -32,6 +32,9 @@ class HomeFragment : Fragment() {
 
     private lateinit var formattedDate: String
 
+    private var task_status = "" // getString(R.string.task_success)
+    private var STATUS:Int = 0
+
 
     private var _binding: ListHomeBinding? = null
 
@@ -79,30 +82,29 @@ class HomeFragment : Fragment() {
 
     private fun AddBtnClicked(){
         binding.btnAddItem.setOnClickListener {
-            addNewItemToList()
-            fillFinishedTasksLis()
+            addNewItemToList(false)
         }
     }
 
-    private fun addNewItemToList(){
-        val newItem = ListItem("")
+    private fun addNewItemToList(returnItem: Boolean){
+        val newItem = ListItem("", "", returnItem)
         dataList.add(newItem)
         adapter.notifyItemInserted(dataList.size - 1)
         binding.recyclerView.scrollToPosition(dataList.size - 1)
     }
 
     private fun addNewItemToFTList(){
-        val newItem = ListItem("")
+        task_status = getTaskStatus(STATUS)
+        val newItem = ListItem(STORAGE.curTask, task_status)
         dataListFT.add(newItem)
         adapterFT.notifyItemInserted(dataListFT.size - 1)
         binding.recyclerViewFT.scrollToPosition(dataListFT.size - 1)
     }
 
     //***********
-    private fun fillFinishedTasksLis(){
+    private fun checkConfirmDialog(){
         if(STORAGE.IsPressed) {
-            customConfirmDialog()
-            addNewItemToFTList()
+            showConfirmDialog()
             STORAGE.IsPressed = false
         }
     }
@@ -117,12 +119,12 @@ class HomeFragment : Fragment() {
 
     private val pollRunnable = object : Runnable {
         override fun run() {
-            fillFinishedTasksLis()
+            checkConfirmDialog()
             handler.postDelayed(this, pollingIntervalMillis)
         }
     }
 
-    private fun customConfirmDialog(){
+    private fun showConfirmDialog(){
         val alertDialogView = LayoutInflater.from(requireContext()).inflate(R.layout.custom_alert_dialog, null)
 
         val alertDialogBuilder = AlertDialog.Builder(requireContext())
@@ -135,27 +137,42 @@ class HomeFragment : Fragment() {
         val successButton = alertDialogView.findViewById<TextView>(R.id.buttonSuccess)
 
         cancelButton.setOnClickListener {
-
+            addNewItemToList(true)
             alertDialog.dismiss()
         }
 
         unsatisButton.setOnClickListener {
-
+            STATUS = STORAGE.UNSATISFACTORY
+            addNewItemToFTList()
             alertDialog.dismiss()
         }
 
         partlyButton.setOnClickListener {
-
+            STATUS = STORAGE.PARTLY
+            addNewItemToFTList()
             alertDialog.dismiss()
         }
 
         successButton.setOnClickListener {
-
+            STATUS = STORAGE.SUCCESS
+            addNewItemToFTList()
             alertDialog.dismiss()
         }
 
         alertDialog.show()
 
+    }
+
+    private fun getTaskStatus(status:Int):String{
+        var curTaskSatus:String = ""
+        when(status){
+            STORAGE.IN_PROCESS -> curTaskSatus = getString(R.string.task_inProcess)
+            STORAGE.UNSATISFACTORY -> curTaskSatus = getString(R.string.task_unsatis)
+            STORAGE.PARTLY -> curTaskSatus = getString(R.string.task_partly)
+            STORAGE.SUCCESS -> curTaskSatus = getString(R.string.task_success)
+            STORAGE.NOT_STARTED -> curTaskSatus = getString(R.string.task_notStarted)
+        }
+        return curTaskSatus
     }
     //***********
 
