@@ -4,10 +4,12 @@ import android.app.AlertDialog
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.diploma.R
@@ -16,6 +18,9 @@ import com.example.diploma.presentation.adapters.ListAdapter
 import com.example.diploma.presentation.adapters.ListFtAdapter
 import com.example.diploma.domain.ListItem
 import com.example.diploma.data.STORAGE
+import com.example.diploma.data.database.DatabaseMain
+import com.example.diploma.data.tables.AllTasksByAllTime
+import com.example.diploma.data.tables.TodayList
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -49,9 +54,12 @@ class HomeFragment : Fragment() {
         val root: View = binding.root
 
         init()
+        fillTodayDataBase()
         setCurDate()
-        AddBtnClicked()
+        createList()
+        addBtnClicked2()
 
+       // AddBtnClicked()
 
         return root
     }
@@ -80,17 +88,133 @@ class HomeFragment : Fragment() {
 
     }
 
+    private fun getMaxID2():Int{
+        var idMax:Int=-1
+        var thread2 = Thread{
+            val database = DatabaseMain.getDatabase(requireContext())
+            idMax = database.getDaoTodayList().getMaxID()
+        }
+        thread2.start()
+        thread2.join()
+        Log.d("TAG", "idMax = ${idMax}")        
+        return idMax
+    }
+
+    private fun getMinInvisID():Int{
+        var minId:Int = -1
+        var thread3 = Thread{
+            val database = DatabaseMain.getDatabase(requireContext())
+            minId = database.getDaoTodayList().getMinInvisibleID()
+        }
+        thread3.start()
+        thread3.join()
+        Log.d("TAG", "minId = ${minId}")
+        return minId
+    }
+
+    private fun itemIsVisible(itemId: Int){
+        var thread4 = Thread{
+            val database = DatabaseMain.getDatabase(requireContext())
+            database.getDaoTodayList().setItemVisible(itemId)
+        }
+        thread4.start()
+        thread4.join()
+    }
+
+    private fun checkLimit():Int{
+        var invisibleItemsAmount:Int = -1
+        var thread5 = Thread{
+            val database = DatabaseMain.getDatabase(requireContext())
+            invisibleItemsAmount = database.getDaoTodayList().checkInvisibleItems()
+        }
+        thread5.start()
+        thread5.join()
+        Log.d("TAG", "visibleItemsAmount = ${invisibleItemsAmount}")
+        return invisibleItemsAmount
+    }
+
+    private fun fillTodayDataBase(){
+        if (!STORAGE.DatabaseTodayListAlreadyCreated && getMaxID2() != STORAGE.LIST_LIMIT-1){
+            for (i in 0 until STORAGE.LIST_LIMIT){
+                val task = TodayList(
+                    i,
+                    "",
+                    "",
+                    0L,
+                    "",
+                    false,
+                    false,
+                    false
+                )
+                var thread1 = Thread{
+                    val database = DatabaseMain.getDatabase(requireContext())
+                    database.getDaoTodayList().insertItem(task)
+                }
+                thread1.start()
+                thread1.join()
+            }
+            STORAGE.DatabaseTodayListAlreadyCreated = true
+        }
+        showTodayListTable()
+    }
+
+    private fun showTodayListTable(){
+        Log.d("showDatabaseToday", "showTodayListTable() is called")
+        var thread2 = Thread {
+            val database = DatabaseMain.getDatabase(requireContext())
+            val items: List<TodayList> = database.getDaoTodayList().getAllTasks()
+            for (item in items){
+                Log.d("showDatabaseToday", "ID: ${item.id} TASK: ${item.name} DESC: ${item.description} STATUS: ${item.status} TIME: ${item.time} ")
+            }
+        }
+        thread2.start()
+        thread2.join()
+    }
+
+    private fun addBtnClicked2(){
+        binding.btnAddItem.setOnClickListener {
+            if(checkLimit()>0) showNewItem2()
+            else Toast.makeText(requireContext(), "limit exceeded", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showNewItem2(){
+        var id = getMinInvisID()
+        itemIsVisible(id)
+        val newItem = ListItem("", "", true)
+        dataList.set(id, newItem)
+        adapter.notifyItemChanged(id)
+        binding.recyclerView.scrollToPosition(id)
+    }
+
     private fun AddBtnClicked(){
         binding.btnAddItem.setOnClickListener {
-            addNewItemToList(false)
+            if (STORAGE.maxPosition<STORAGE.LIST_LIMIT) STORAGE.maxPosition++
+            if (STORAGE.maxPosition in 0..STORAGE.LIST_LIMIT-1) showNewItem()
+            Log.d("TAG", "AddBtnClicked() maxPosition = ${STORAGE.maxPosition}")
         }
+    }
+
+    private fun createList(){
+        if(!STORAGE.TodayListAlreadyCreated){
+            val newItem = ListItem("", "")
+            for (i in 0 until STORAGE.LIST_LIMIT) dataList.add(newItem)
+            adapter.notifyDataSetChanged()
+            STORAGE.TodayListAlreadyCreated = true
+        }
+        Log.d("TAG", "addNewItemToList() maxPosition = ${STORAGE.maxPosition}")
     }
 
     private fun addNewItemToList(returnItem: Boolean){
         val newItem = ListItem("", "", returnItem)
         dataList.add(newItem)
         adapter.notifyItemInserted(dataList.size - 1)
-        binding.recyclerView.scrollToPosition(dataList.size - 1)
+        Log.d("TAG", "addNewItemToList() maxPosition = ${STORAGE.maxPosition}")
+    }
+
+    private fun showNewItem(){
+        adapter.notifyItemInserted(STORAGE.maxPosition)
+        binding.recyclerView.scrollToPosition(STORAGE.maxPosition)
     }
 
     private fun addNewItemToFTList(){

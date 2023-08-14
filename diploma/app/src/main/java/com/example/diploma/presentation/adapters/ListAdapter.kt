@@ -41,18 +41,49 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = data[position]
-        setupItem(holder, item)
+
+        setupItem2(holder, item)
+        hideItems2(holder)
+        showItem2(holder, item)
+        stopChronometer2(holder, position)
+
+        /*
+        setupItem(holder, item, position)
         setCursor(holder, position)
         editDescription(holder, item)
         onBtnPlayPressed(holder, item, position)
         stopChronometer(holder, item, position)
+         */
     }
 
     override fun getItemCount(): Int {
         return data.size
     }
 
-    private fun setupItem(holder: ViewHolder, item: ListItem) {
+    private fun hideItems2(holder: ViewHolder){
+        hideFrame(holder)
+        hideDescription(holder)
+    }
+
+    private fun showItem2(holder: ViewHolder, item: ListItem){
+        if (item.showItem) showFrame(holder)
+    }
+    private fun setupItem2(holder: ViewHolder, item: ListItem){
+        holder.etTask.setText(item.text)
+        setTheme(1, holder)
+    }
+
+    private fun stopChronometer2(holder: ViewHolder, position: Int) {
+        holder.butStop.setOnClickListener {
+            Log.d("TAG", "stopChronometer2() position = ${position}")
+        }
+    }
+
+    private fun hideAllCreatedItem2(holder: ViewHolder){
+        hideFrame(holder)
+    }
+
+    private fun setupItem(holder: ViewHolder, item: ListItem, position: Int) {
         if(item.returnItem){
             var thread4 = Thread {
                 val database = DatabaseMain.getDatabase(context)
@@ -67,10 +98,30 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
             thread4.join()
         }
         else holder.etTask.setText(item.text)
-        holder.butStop.setColorFilter(ContextCompat.getColor(context, R.color.custom2))
-        holder.butPlayPause.setColorFilter(ContextCompat.getColor(context, R.color.custom2))
-        holder.butDescr.setColorFilter(ContextCompat.getColor(context, R.color.custom2))
-       //listListAdapt holder.chronometer.setTextColor(ContextCompat.getColor(context, R.color.custom4))
+
+        if (STORAGE.maxPosition<0) {
+            hideDescription(holder)
+            hideFrame(holder)
+        }
+        else {
+            if(position == STORAGE.maxPosition) showFrame(holder)
+            else hideFrame(holder)
+        }
+
+        Log.d("TAG", "setupItem() position = ${position}")
+        Log.d("TAG", "setupItem() maxPosition = ${STORAGE.maxPosition}")
+
+        setTheme(1, holder)
+    }
+
+    private fun setTheme(theme: Int, holder: ViewHolder){
+        when(theme){
+            1 -> {
+                holder.butStop.setColorFilter(ContextCompat.getColor(context, R.color.custom2))
+                holder.butPlayPause.setColorFilter(ContextCompat.getColor(context, R.color.custom2))
+                holder.butDescr.setColorFilter(ContextCompat.getColor(context, R.color.custom2))
+            }
+        }
     }
 
     private fun setCursor(holder: ViewHolder, position: Int){
@@ -105,6 +156,14 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
 
     private fun hideDescription(holder: ViewHolder){
         holder.descriptionForm.visibility = GONE
+    }
+
+    private fun showFrame(holder: ViewHolder){
+        holder.itemFrame.visibility = VISIBLE
+    }
+
+    private fun hideFrame(holder: ViewHolder){
+        holder.itemFrame.visibility = GONE
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -149,7 +208,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
                 btnStatus = STORAGE.ON_PAUSE
                 taskStatus = context.getString(R.string.task_partly)
             }
-            val task =AllTasksByAllTime(
+            val task = AllTasksByAllTime(
                 null,
                 curDate,
                 userTask,
@@ -221,14 +280,14 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
     private fun stopChronometer(holder: ViewHolder, item: ListItem, position: Int) {
         holder.butStop.setOnClickListener {
             var time = item.currentTime
-            Log.d("TAG", "IsPressed up = ${STORAGE.IsPressed}")
-            Log.d("TAG", "isRunning in  stopChronometer() up = ${item.isRunning}")
-            Log.d("TAG", "currentTime up = ${time}")
+           // Log.d("TAG", "IsPressed up = ${STORAGE.IsPressed}")
+          //  Log.d("TAG", "isRunning in  stopChronometer() up = ${item.isRunning}")
+           // Log.d("TAG", "currentTime up = ${time}")
             if(item.isRunning) {
                 play(holder, item, position)
             }
             time = item.currentTime
-            Log.d("TAG", "currentTime above = ${time}")
+           // Log.d("TAG", "currentTime above = ${time}")
             if(time != 0L){
                 item.isStop = !item.isStop
                 Log.d("TAG", "i'm in 'else'")
@@ -236,16 +295,29 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
                 STORAGE.curTask = item.text
                 updateDatabase(holder, item, item.isRunning, item.isStop)
             }
-            removeItem(position)
-            Log.d("TAG", "IsPressed  above = ${STORAGE.IsPressed}")
-            Log.d("TAG", "isRunning in  stopChronometer() above = ${item.isRunning}")
+            removeItem(holder, item, position)
+            //Log.d("TAG", "IsPressed above = ${STORAGE.IsPressed}")
+           // Log.d("TAG", "isRunning in stopChronometer() above = ${item.isRunning}")
         }
     }
 
-    private fun removeItem(position: Int){
+    private fun removeItem(holder: ViewHolder, item: ListItem, position: Int){
+
+        hideDescription(holder)
+        hideFrame(holder)
+        if (STORAGE.maxPosition==STORAGE.LIST_LIMIT)STORAGE.maxPosition--
+        if (STORAGE.maxPosition>0) STORAGE.maxPosition--
+
+        Log.d("TAG", "removeItem(): position = ${position}")
+        Log.d("TAG", "removeItem() maxPosition = ${STORAGE.maxPosition}")
+
+
+        /*
         data.removeAt(position)
         notifyItemRemoved(position)
         notifyDataSetChanged()
+
+         */
     }
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -256,5 +328,6 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         val chronometer: Chronometer = view.findViewById(R.id.chronometer)
         val butStop: ImageButton = view.findViewById(R.id.ib_stop)
         val butPlayPause: ImageButton = view.findViewById(R.id.ib_play_pause)
+        val itemFrame: CardView = view.findViewById(R.id.finished_task)
     }
 }
