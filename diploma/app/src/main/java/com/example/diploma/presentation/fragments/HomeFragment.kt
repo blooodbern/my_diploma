@@ -144,6 +144,7 @@ class HomeFragment : Fragment() {
                     "",
                     false,
                     false,
+                    false,
                     false
                 )
                 var thread1 = Thread{
@@ -164,7 +165,10 @@ class HomeFragment : Fragment() {
             val database = DatabaseMain.getDatabase(requireContext())
             val items: List<TodayList> = database.getDaoTodayList().getAllTasks()
             for (item in items){
-                Log.d("showDatabaseToday", "ID: ${item.id} TASK: ${item.name} DESC: ${item.description} STATUS: ${item.status} TIME: ${item.time} ")
+                Log.d("showDatabaseToday", "ID: ${item.id} TASK: ${item.task} " +
+                        "DESC: ${item.description} STATUS: ${item.status} TIME: ${item.time} " +
+                        "isPlaying: ${item.isPlaying} isStop: ${item.isStop} " +
+                        "isVisible: ${item.isVisible} lastChanged: ${item.lastChanged}")
             }
         }
         thread2.start()
@@ -175,6 +179,8 @@ class HomeFragment : Fragment() {
         binding.btnAddItem.setOnClickListener {
             if(checkLimit()>0) showNewItem2()
             else Toast.makeText(requireContext(), "limit exceeded", Toast.LENGTH_SHORT).show()
+            Log.d("TAG", "addBtnClicked2() current limit = ${checkLimit()}")
+            showTodayListTable()
         }
     }
 
@@ -185,6 +191,26 @@ class HomeFragment : Fragment() {
         dataList.set(id, newItem)
         adapter.notifyItemChanged(id)
         binding.recyclerView.scrollToPosition(id)
+    }
+
+    private fun reShowItem2(){
+        var id = getLastChangeId()
+        itemIsVisible(id)
+        val newItem = ListItem("", "", true)
+        dataList.set(id, newItem)
+        adapter.notifyItemChanged(id)
+        binding.recyclerView.scrollToPosition(id)
+    }
+
+    private fun getLastChangeId():Int{
+        var id:Int = -1
+        var threadLastChange = Thread{
+            val database = DatabaseMain.getDatabase(requireContext())
+            id = database.getDaoTodayList().getLastChangedItemId()
+        }
+        threadLastChange.start()
+        threadLastChange.join()
+        return id
     }
 
     private fun AddBtnClicked(){
@@ -202,7 +228,7 @@ class HomeFragment : Fragment() {
             adapter.notifyDataSetChanged()
             STORAGE.TodayListAlreadyCreated = true
         }
-        Log.d("TAG", "addNewItemToList() maxPosition = ${STORAGE.maxPosition}")
+        Log.d("TAG", "createList() TodayListAlreadyCreated = ${STORAGE.TodayListAlreadyCreated}")
     }
 
     private fun addNewItemToList(returnItem: Boolean){
@@ -228,7 +254,7 @@ class HomeFragment : Fragment() {
     //***********
     private fun checkConfirmDialog(){
         if(STORAGE.IsPressed) {
-            showConfirmDialog()
+            showConfirmDialog2()
             STORAGE.IsPressed = false
         }
     }
@@ -246,6 +272,50 @@ class HomeFragment : Fragment() {
             checkConfirmDialog()
             handler.postDelayed(this, pollingIntervalMillis)
         }
+    }
+
+    private fun showConfirmDialog2(){
+        val alertDialogView = LayoutInflater.from(requireContext()).inflate(R.layout.custom_alert_dialog, null)
+
+        val alertDialogBuilder = AlertDialog.Builder(requireContext())
+        alertDialogBuilder.setView(alertDialogView)
+        val alertDialog = alertDialogBuilder.create()
+
+        val cancelButton = alertDialogView.findViewById<TextView>(R.id.buttonCancel)
+        val unsatisButton = alertDialogView.findViewById<TextView>(R.id.buttonUnsatisfactory)
+        val partlyButton = alertDialogView.findViewById<TextView>(R.id.buttonPartially)
+        val successButton = alertDialogView.findViewById<TextView>(R.id.buttonSuccess)
+
+        cancelButton.setOnClickListener {
+            reShowItem2()
+            alertDialog.dismiss()
+        }
+
+        unsatisButton.setOnClickListener {
+            updateTaskStatus2(getString(R.string.task_unsatis))
+            alertDialog.dismiss()
+        }
+
+        partlyButton.setOnClickListener {
+            updateTaskStatus2(getString(R.string.task_partly))
+            alertDialog.dismiss()
+        }
+
+        successButton.setOnClickListener {
+            updateTaskStatus2(getString(R.string.task_success))
+            alertDialog.dismiss()
+        }
+
+        alertDialog.show()
+    }
+
+    private fun updateTaskStatus2(status:String){
+        var threadUpdateStatus = Thread{
+            val database = DatabaseMain.getDatabase(requireContext())
+            database.getDaoTodayList().setItemStatus(status)
+        }
+        threadUpdateStatus.start()
+        threadUpdateStatus.join()
     }
 
     private fun showConfirmDialog(){

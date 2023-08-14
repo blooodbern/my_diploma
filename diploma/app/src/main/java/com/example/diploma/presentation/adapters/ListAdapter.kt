@@ -22,6 +22,7 @@ import com.example.diploma.domain.ListItem
 import com.example.diploma.data.STORAGE
 import com.example.diploma.data.database.DatabaseMain
 import com.example.diploma.data.tables.AllTasksByAllTime
+import com.example.diploma.data.tables.TodayList
 import java.time.LocalDate
 
 
@@ -45,7 +46,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         setupItem2(holder, item)
         hideItems2(holder)
         showItem2(holder, item)
-        stopChronometer2(holder, position)
+        stopChronometer2(holder, position, item)
 
         /*
         setupItem(holder, item, position)
@@ -66,17 +67,83 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
     }
 
     private fun showItem2(holder: ViewHolder, item: ListItem){
-        if (item.showItem) showFrame(holder)
+        if (item.showItem) {
+            showFrame(holder)
+            item.showItem = false
+        }
     }
     private fun setupItem2(holder: ViewHolder, item: ListItem){
         holder.etTask.setText(item.text)
         setTheme(1, holder)
     }
 
-    private fun stopChronometer2(holder: ViewHolder, position: Int) {
+    private fun stopChronometer2(holder: ViewHolder, position: Int, item: ListItem) {
         holder.butStop.setOnClickListener {
             Log.d("TAG", "stopChronometer2() position = ${position}")
+            setItemIsStop2(position)
+            if (getStopItem(position)==1){
+                hideDescription(holder)
+                hideFrame(holder)
+            }
+            if (readyToWrite2(holder)) {
+                STORAGE.IsPressed = true
+                writeTaskToDB2(holder, item, position)
+            }
+            else {setItemNotVisible2(position)}
         }
+    }
+
+    private fun setItemNotVisible2(position: Int){
+        var threadSetInvisible = Thread{
+            val database = DatabaseMain.getDatabase(context)
+            database.getDaoTodayList().setItemInvisible(position)
+            database.getDaoTodayList().setItemNotStop(position)
+        }
+        threadSetInvisible.start()
+        threadSetInvisible.join()
+    }
+
+    private fun writeTaskToDB2(holder: ViewHolder, item: ListItem, position: Int){
+        val userTask = holder.etTask.text.toString()
+        val userDescription = holder.etDescription.text.toString()
+        val time = item.currentTime
+        val threadInsertTodayList = Thread{
+            val database = DatabaseMain.getDatabase(context)
+            database.getDaoTodayList().setItemName(userTask, position)
+            database.getDaoTodayList().setItemDesc(userDescription, position)
+            database.getDaoTodayList().setItemTime(time, position)
+        }
+        threadInsertTodayList.start()
+        threadInsertTodayList.join()
+    }
+
+    private fun readyToWrite2(holder: ViewHolder):Boolean{
+        val task:String = holder.etTask.text.toString()
+        if (task=="") return false
+        return true
+    }
+
+    private fun setItemIsStop2(position: Int){
+        var threadStopItem = Thread {
+            val database = DatabaseMain.getDatabase(context)
+            database.getDaoTodayList().setItemStop(position)
+            database.getDaoTodayList().setItemNotPlaying(position)
+            database.getDaoTodayList().unsetItemLastChanged()
+            database.getDaoTodayList().setItemLastChanged(position)
+        }
+        threadStopItem.start()
+        threadStopItem.join()
+    }
+
+    private fun getStopItem(position: Int):Int{
+        var stopItem:Int = -1
+        var threadCountStopItem = Thread{
+            val database = DatabaseMain.getDatabase(context)
+            stopItem = database.getDaoTodayList().checkItemStop(position)
+        }
+        threadCountStopItem.start()
+        threadCountStopItem.join()
+        return stopItem
     }
 
     private fun hideAllCreatedItem2(holder: ViewHolder){

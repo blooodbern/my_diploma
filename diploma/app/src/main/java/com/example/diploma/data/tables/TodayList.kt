@@ -8,8 +8,8 @@ import androidx.room.PrimaryKey
 data class TodayList(
     @PrimaryKey
     var id: Int,
-    @ColumnInfo(name = "name")
-    var name: String,
+    @ColumnInfo(name = "task")
+    var task: String,
     @ColumnInfo(name = "description")
     var description: String,
     @ColumnInfo(name = "time")
@@ -21,5 +21,7 @@ data class TodayList(
     @ColumnInfo(name = "isStop")
     var isStop: Boolean,
     @ColumnInfo(name = "isVisible")
-    var isVisible: Boolean
+    var isVisible: Boolean,
+    @ColumnInfo(name = "lastChanged")
+    var lastChanged: Boolean
 )

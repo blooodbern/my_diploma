@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "c9f44775c33e74fe8b07507acd582b20",
+    "identityHash": "defe46cb328441f1eaa53d370e21954e",
     "entities": [
       {
         "tableName": "all_tasks_by_all_time",
@@ -62,7 +62,7 @@
       },
       {
         "tableName": "today_list",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `name` TEXT NOT NULL, `description` TEXT NOT NULL, `time` INTEGER NOT NULL, `status` TEXT NOT NULL, `isPlaying` INTEGER NOT NULL, `isStop` INTEGER NOT NULL, `isVisible` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `task` TEXT NOT NULL, `description` TEXT NOT NULL, `time` INTEGER NOT NULL, `status` TEXT NOT NULL, `isPlaying` INTEGER NOT NULL, `isStop` INTEGER NOT NULL, `isVisible` INTEGER NOT NULL, `lastChanged` INTEGER NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -71,8 +71,8 @@
             "notNull": true
           },
           {
-            "fieldPath": "name",
-            "columnName": "name",
+            "fieldPath": "task",
+            "columnName": "task",
             "affinity": "TEXT",
             "notNull": true
           },
@@ -111,6 +111,12 @@
             "columnName": "isVisible",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "lastChanged",
+            "columnName": "lastChanged",
+            "affinity": "INTEGER",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -126,7 +132,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'c9f44775c33e74fe8b07507acd582b20')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'defe46cb328441f1eaa53d370e21954e')"
     ]
   }
 }
