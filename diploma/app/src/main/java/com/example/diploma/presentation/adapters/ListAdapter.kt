@@ -23,6 +23,10 @@ import com.example.diploma.data.STORAGE
 import com.example.diploma.data.database.DatabaseMain
 import com.example.diploma.data.tables.AllTasksByAllTime
 import com.example.diploma.data.tables.TodayList
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 
@@ -47,11 +51,13 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         hideItems2(holder)
         showItem2(holder, item)
         stopChronometer2(holder, position, item)
+        setCursor2(holder)
+        editDescription(holder, item)
 
         /*
         setupItem(holder, item, position)
-        setCursor(holder, position)
-        editDescription(holder, item)
+        setCursor(holder, position) // +-
+
         onBtnPlayPressed(holder, item, position)
         stopChronometer(holder, item, position)
          */
@@ -59,6 +65,22 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
 
     override fun getItemCount(): Int {
         return data.size
+    }
+
+    private fun setCursor2(holder: ViewHolder){
+        holder.etTask.clearFocus()
+        GlobalScope.launch(Dispatchers.Main) {
+            if (isVisibleItem()) {
+                holder.etTask.requestFocus()
+            }
+            Log.d("TAG", "setCursor2() isVisibleItem = ${isVisibleItem()}")
+        }
+    }
+
+    private suspend fun isVisibleItem():Boolean = withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(context)
+        val visibleCount = database.getDaoTodayList().checkVisibleItems()
+        return@withContext visibleCount > 0
     }
 
     private fun hideItems2(holder: ViewHolder){
@@ -86,7 +108,6 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
                 hideFrame(holder)
             }
             if (readyToWrite2(holder)) {
-                STORAGE.IsPressed = true
                 writeTaskToDB2(holder, item, position)
             }
             else {setItemNotVisible2(position)}
@@ -112,9 +133,20 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
             database.getDaoTodayList().setItemName(userTask, position)
             database.getDaoTodayList().setItemDesc(userDescription, position)
             database.getDaoTodayList().setItemTime(time, position)
+            if(time!=0L) STORAGE.IsPressed = true
+            else updateTaskStatus2(context.getString(R.string.task_notStarted))
         }
         threadInsertTodayList.start()
         threadInsertTodayList.join()
+    }
+
+    private fun updateTaskStatus2(status:String){
+        var threadUpdateStatus = Thread{
+            val database = DatabaseMain.getDatabase(context)
+            database.getDaoTodayList().setItemStatus(status)
+        }
+        threadUpdateStatus.start()
+        threadUpdateStatus.join()
     }
 
     private fun readyToWrite2(holder: ViewHolder):Boolean{

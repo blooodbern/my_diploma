@@ -21,6 +21,8 @@ interface DaoTodayList {
     fun setItemInvisible(itemID:Int)
     @Query("SELECT COUNT(*) FROM today_list WHERE isVisible = 0")
     fun checkInvisibleItems(): Int
+    @Query("SELECT COUNT(*) FROM today_list WHERE isVisible = 1")
+    fun checkVisibleItems(): Int
     @Query("UPDATE today_list SET isStop = 1 WHERE (id = :itemID)")
     fun setItemStop(itemID:Int)
     @Query("UPDATE today_list SET isStop = 0 WHERE (id = :itemID)")
