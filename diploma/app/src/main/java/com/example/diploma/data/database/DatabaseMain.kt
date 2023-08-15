@@ -21,7 +21,7 @@ abstract class DatabaseMain: RoomDatabase() {
             return Room.databaseBuilder(
                 context.applicationContext,
                 DatabaseMain::class.java,
-                "BloodbernDiplomaDB1.30"
+                "BloodbernDiplomaDB1.81"
             ).build()
         }
     }

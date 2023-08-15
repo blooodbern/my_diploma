@@ -29,6 +29,10 @@ interface DaoTodayList {
     fun setItemNotStop(itemID:Int)
     @Query("UPDATE today_list SET isPlaying = 0 WHERE (id = :itemID)")
     fun setItemNotPlaying(itemID:Int)
+    @Query("UPDATE today_list SET isPlaying = :isPlaying WHERE (id = :itemID)")
+    fun changeItemPlayingStatus(isPlaying:Boolean, itemID:Int)
+    @Query("SELECT isPlaying FROM today_list WHERE (id = :itemID)")
+    fun checkItemIsPlaying(itemID:Int):Boolean
     @Query("SELECT COUNT(*) FROM today_list WHERE (id = :itemID AND isStop = 1)")
     fun checkItemStop(itemID:Int): Int
     @Query("UPDATE today_list SET lastChanged = 1 WHERE (id = :itemID)")
@@ -41,8 +45,14 @@ interface DaoTodayList {
     fun setItemStatus(status:String)
     @Query("UPDATE today_list SET task = :task WHERE id = :id")
     fun setItemName(task:String, id:Int)
+    @Query("SELECT task FROM today_list WHERE id = :itemID")
+    fun getItemName(itemID:Int):String
     @Query("UPDATE today_list SET description = :description WHERE id = :id")
     fun setItemDesc(description:String, id:Int)
+    @Query("SELECT description FROM today_list WHERE id = :itemID")
+    fun getItemDescription(itemID:Int):String
     @Query("UPDATE today_list SET time = :time WHERE id = :id")
     fun setItemTime(time:Long, id:Int)
+    @Query("SELECT time FROM today_list WHERE id = :itemID")
+    fun getItemTime(itemID:Int):Long
 }

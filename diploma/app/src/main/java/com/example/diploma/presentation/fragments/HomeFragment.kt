@@ -21,6 +21,10 @@ import com.example.diploma.data.STORAGE
 import com.example.diploma.data.database.DatabaseMain
 import com.example.diploma.data.tables.AllTasksByAllTime
 import com.example.diploma.data.tables.TodayList
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -194,12 +198,30 @@ class HomeFragment : Fragment() {
     }
 
     private fun reShowItem2(){
-        var id = getLastChangeId()
-        itemIsVisible(id)
-        val newItem = ListItem("", "", true)
-        dataList.set(id, newItem)
-        adapter.notifyItemChanged(id)
-        binding.recyclerView.scrollToPosition(id)
+        CoroutineScope(Dispatchers.Main).launch {
+            var id = getLastChangeId()
+            itemIsVisible(id)
+            val newItem = ListItem(getTaskText2(id), getTaskDescr2(id), true, getTaskTime2(id))
+            dataList.set(id, newItem)
+            adapter.notifyItemChanged(id)
+            binding.recyclerView.scrollToPosition(id)
+        }
+
+    }
+
+    private suspend fun getTaskText2(id:Int):String = withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(requireContext())
+        return@withContext database.getDaoTodayList().getItemName(id)
+    }
+
+    private suspend fun getTaskDescr2(id:Int):String = withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(requireContext())
+        return@withContext database.getDaoTodayList().getItemDescription(id)
+    }
+
+    private suspend fun getTaskTime2(id:Int):Long = withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(requireContext())
+        return@withContext database.getDaoTodayList().getItemTime(id)
     }
 
     private fun getLastChangeId():Int{
@@ -280,6 +302,7 @@ class HomeFragment : Fragment() {
         val alertDialogBuilder = AlertDialog.Builder(requireContext())
         alertDialogBuilder.setView(alertDialogView)
         val alertDialog = alertDialogBuilder.create()
+        alertDialog.setCanceledOnTouchOutside(false)
 
         val cancelButton = alertDialogView.findViewById<TextView>(R.id.buttonCancel)
         val unsatisButton = alertDialogView.findViewById<TextView>(R.id.buttonUnsatisfactory)

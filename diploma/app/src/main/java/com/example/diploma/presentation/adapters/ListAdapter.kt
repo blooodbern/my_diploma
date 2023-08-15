@@ -23,11 +23,13 @@ import com.example.diploma.data.STORAGE
 import com.example.diploma.data.database.DatabaseMain
 import com.example.diploma.data.tables.AllTasksByAllTime
 import com.example.diploma.data.tables.TodayList
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.Clock
 import java.time.LocalDate
+import java.time.chrono.ChronoLocalDateTime
 
 
 class ListAdapter(private val data: MutableList<ListItem>, private val context: Context) : RecyclerView.Adapter<ListAdapter.ViewHolder>() {
@@ -53,9 +55,10 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         stopChronometer2(holder, position, item)
         setCursor2(holder)
         editDescription(holder, item)
+        timer2(holder, position, item)
 
         /*
-        setupItem(holder, item, position)
+        setupItem(holder, item, position) +
         setCursor(holder, position) // +-
 
         onBtnPlayPressed(holder, item, position)
@@ -67,9 +70,109 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         return data.size
     }
 
+    private fun timer2(holder: ViewHolder, position: Int, item: ListItem){
+        onBtnPlayPressed2(holder, position, item)
+    }
+
+    private fun onBtnPlayPressed2(holder: ViewHolder, position: Int, item: ListItem){
+        holder.butPlayPause.setOnClickListener {
+            setItemLastChanged2(position)
+            chronometerPlay2(holder, position, item)
+        }
+    }
+
+    private fun chronometerPlay2(holder: ViewHolder, position: Int, item: ListItem){
+        CoroutineScope(Dispatchers.Main).launch {
+            if (thereIsTask(holder)) {
+                if (chronometerIsPlaying2(position)) {
+                    setItemPlaying2(false, position)
+                    pauseChronometer2(holder, position, item)
+                } else {
+                    setItemPlaying2(true, position)
+                    startChronometer2(holder, position, item)
+                }
+            }
+        }
+    }
+
+    private fun startChronometer2(holder: ViewHolder, position: Int, item: ListItem){
+        holder.butPlayPause.setImageResource(R.drawable.ic_pause_36)
+        CoroutineScope(Dispatchers.Main).launch{
+            //if (!chronometerNotStarted2(holder)) holder.chronometer.base = SystemClock.elapsedRealtime() - getCurTime2(position)
+            Log.d("TAG", "startChronometer2() chronometer.base: ${holder.chronometer.base} SystemClock.elapsedRealtime() = ${SystemClock.elapsedRealtime()} ")
+
+            if (!item.timerStarted) {
+                item.timerStarted = true
+                holder.chronometer.base = SystemClock.elapsedRealtime()
+            } else {
+                holder.chronometer.base = SystemClock.elapsedRealtime() - getCurTime2(position)
+            }
+
+            holder.chronometer.start()
+            Log.d("Vojt", "start = chronometer.base: ${holder.chronometer.base}")
+
+        }
+    }
+
+    private suspend fun getCurTime2(position: Int):Long = withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(context)
+        return@withContext database.getDaoTodayList().getItemTime(position)
+    }
+
+    private fun pauseChronometer2(holder: ViewHolder, position: Int,item: ListItem){
+        holder.butPlayPause.setImageResource(R.drawable.ic_play_36)
+        val currentTime = getCurItemTime2(holder, item)
+        Log.d("Vojt", "current time = chronometer.base: ${holder.chronometer.base}")
+        // if (item.startedTimer) saveCurTime2(...) else saveCurTime2(0)
+        saveCurTime2(currentTime, position)
+        holder.chronometer.stop()
+        Log.d("Vojt", "pause = chronometer.base: ${holder.chronometer.base}")
+    }
+
+    private fun getCurItemTime2(holder: ViewHolder, item: ListItem):Long{
+        var diff = 0L
+        if (item.timerStarted) {
+            diff = SystemClock.elapsedRealtime() - holder.chronometer.base
+        }
+        Log.d("Vojt", "get current = diff: ${diff}")
+        return diff
+    }
+
+    private fun chronometerNotStarted2(holder: ViewHolder, item: ListItem):Boolean{
+        Log.d("TAG", "chronometerNotStarted2() chronometer = ${getCurItemTime2(holder, item)} ms")
+        if (getCurItemTime2(holder, item) == 0L) return true
+        return false
+    }
+
+    private fun saveCurTime2(time:Long, position: Int){
+        Log.d("TAG", "saveCurTime2() time = ${time/1000} s position: ${position}")
+        var threadSaveTime = Thread{
+            val database = DatabaseMain.getDatabase(context)
+            database.getDaoTodayList().setItemTime(time, position)
+        }
+        threadSaveTime.start()
+        threadSaveTime.join()
+    }
+
+    private fun setItemPlaying2(isPlaying:Boolean, position: Int){
+        var threadSetPlayItem = Thread{
+            val database = DatabaseMain.getDatabase(context)
+            database.getDaoTodayList().changeItemPlayingStatus(isPlaying, position)
+        }
+        threadSetPlayItem.start()
+        threadSetPlayItem.join()
+    }
+
+    private suspend fun chronometerIsPlaying2(position: Int):Boolean = withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(context)
+        return@withContext database.getDaoTodayList().checkItemIsPlaying(position)
+    }
+
+
+
     private fun setCursor2(holder: ViewHolder){
         holder.etTask.clearFocus()
-        GlobalScope.launch(Dispatchers.Main) {
+        CoroutineScope(Dispatchers.Main).launch {
             if (isVisibleItem()) {
                 holder.etTask.requestFocus()
             }
@@ -94,23 +197,51 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
             item.showItem = false
         }
     }
+
     private fun setupItem2(holder: ViewHolder, item: ListItem){
         holder.etTask.setText(item.text)
+        holder.etDescription.setText(item.description)
+        holder.chronometer.base = SystemClock.elapsedRealtime()
+       // holder.chronometer.base = SystemClock.elapsedRealtime() - item.currentTime
         setTheme(1, holder)
+        Log.d("TAG", "setupItem2() chronometer.base: ${holder.chronometer.base} SystemClock.elapsedRealtime() = ${SystemClock.elapsedRealtime()} item.currentTime = ${item.currentTime}")
+    }
+
+    private fun showTodayListTable2(){
+        Log.d("showDatabaseToday", "showTodayListTable2() is called")
+        var thread2 = Thread {
+            val database = DatabaseMain.getDatabase(context)
+            val items: List<TodayList> = database.getDaoTodayList().getAllTasks()
+            for (item in items){
+                Log.d("showDatabaseToday", "ID: ${item.id} TASK: ${item.task} " +
+                        "DESC: ${item.description} STATUS: ${item.status} TIME: ${item.time} " +
+                        "isPlaying: ${item.isPlaying} isStop: ${item.isStop} " +
+                        "isVisible: ${item.isVisible} lastChanged: ${item.lastChanged}")
+            }
+        }
+        thread2.start()
+        thread2.join()
     }
 
     private fun stopChronometer2(holder: ViewHolder, position: Int, item: ListItem) {
         holder.butStop.setOnClickListener {
             Log.d("TAG", "stopChronometer2() position = ${position}")
             setItemIsStop2(position)
-            if (getStopItem(position)==1){
-                hideDescription(holder)
-                hideFrame(holder)
+            setItemLastChanged2(position)
+            CoroutineScope(Dispatchers.Main).launch {
+                if (getStopItem(position) == 1) {
+                    hideDescription(holder)
+                    hideFrame(holder)
+                }
+                if (thereIsTask(holder)) {
+                    pauseChronometer2(holder, position, item)
+                    writeTaskToDB2(holder, position)
+                    showTodayListTable2()
+                    callConfirmDialog2(holder, item)
+                } else {
+                    setItemNotVisible2(position)
+                }
             }
-            if (readyToWrite2(holder)) {
-                writeTaskToDB2(holder, item, position)
-            }
-            else {setItemNotVisible2(position)}
         }
     }
 
@@ -124,17 +255,20 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         threadSetInvisible.join()
     }
 
-    private fun writeTaskToDB2(holder: ViewHolder, item: ListItem, position: Int){
+    private fun callConfirmDialog2(holder: ViewHolder, item: ListItem){
+        CoroutineScope(Dispatchers.Main).launch{
+            if(chronometerNotStarted2(holder, item)) updateTaskStatus2(context.getString(R.string.task_notStarted))
+            else STORAGE.IsPressed = true
+        }
+    }
+
+    private fun writeTaskToDB2(holder: ViewHolder, position: Int){
         val userTask = holder.etTask.text.toString()
         val userDescription = holder.etDescription.text.toString()
-        val time = item.currentTime
         val threadInsertTodayList = Thread{
             val database = DatabaseMain.getDatabase(context)
             database.getDaoTodayList().setItemName(userTask, position)
             database.getDaoTodayList().setItemDesc(userDescription, position)
-            database.getDaoTodayList().setItemTime(time, position)
-            if(time!=0L) STORAGE.IsPressed = true
-            else updateTaskStatus2(context.getString(R.string.task_notStarted))
         }
         threadInsertTodayList.start()
         threadInsertTodayList.join()
@@ -149,7 +283,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         threadUpdateStatus.join()
     }
 
-    private fun readyToWrite2(holder: ViewHolder):Boolean{
+    private fun thereIsTask(holder: ViewHolder):Boolean{
         val task:String = holder.etTask.text.toString()
         if (task=="") return false
         return true
@@ -160,22 +294,24 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
             val database = DatabaseMain.getDatabase(context)
             database.getDaoTodayList().setItemStop(position)
             database.getDaoTodayList().setItemNotPlaying(position)
-            database.getDaoTodayList().unsetItemLastChanged()
-            database.getDaoTodayList().setItemLastChanged(position)
         }
         threadStopItem.start()
         threadStopItem.join()
     }
 
-    private fun getStopItem(position: Int):Int{
-        var stopItem:Int = -1
-        var threadCountStopItem = Thread{
+    private fun setItemLastChanged2(position: Int){
+        var threadItemLastChanged = Thread {
             val database = DatabaseMain.getDatabase(context)
-            stopItem = database.getDaoTodayList().checkItemStop(position)
+            database.getDaoTodayList().unsetItemLastChanged()
+            database.getDaoTodayList().setItemLastChanged(position)
         }
-        threadCountStopItem.start()
-        threadCountStopItem.join()
-        return stopItem
+        threadItemLastChanged.start()
+        threadItemLastChanged.join()
+    }
+
+    private suspend fun getStopItem(position: Int):Int = withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(context)
+        return@withContext database.getDaoTodayList().checkItemStop(position)
     }
 
     private fun hideAllCreatedItem2(holder: ViewHolder){
@@ -190,7 +326,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
                 for (task in tasks){
                     holder.etTask.setText(task.task)
                     choronoTime = task.time
-                    holder.chronometer.base = SystemClock.elapsedRealtime() - choronoTime
+                    //holder.chronometer.base = SystemClock.elapsedRealtime() - choronoTime
                 }
             }
             thread4.start()
@@ -361,18 +497,18 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
     }
 
     private fun continueChronometer(holder: ViewHolder){
-        holder.chronometer.base = SystemClock.elapsedRealtime() - choronoTime
+        //holder.chronometer.base = SystemClock.elapsedRealtime() - choronoTime
         holder.chronometer.start()
     }
 
     private fun startChronometer(holder: ViewHolder, position: Int) {
-        holder.chronometer.base = SystemClock.elapsedRealtime() - data[position].currentTime
+        //holder.chronometer.base = SystemClock.elapsedRealtime() - data[position].currentTime
         holder.chronometer.start()
     }
 
     private fun pauseChronometer(holder: ViewHolder, position: Int) {
         holder.chronometer.stop()
-        data[position].currentTime = SystemClock.elapsedRealtime() - holder.chronometer.base
+        //data[position].currentTime = SystemClock.elapsedRealtime() - holder.chronometer.base
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -390,7 +526,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
             if(time != 0L){
                 item.isStop = !item.isStop
                 Log.d("TAG", "i'm in 'else'")
-                STORAGE.IsPressed = true
+               // STORAGE.IsPressed = true
                 STORAGE.curTask = item.text
                 updateDatabase(holder, item, item.isRunning, item.isStop)
             }
