@@ -170,7 +170,7 @@ class HomeFragment : Fragment() {
             val items: List<TodayList> = database.getDaoTodayList().getAllTasks()
             for (item in items){
                 Log.d("showDatabaseToday", "ID: ${item.id} TASK: ${item.task} " +
-                        "DESC: ${item.description} STATUS: ${item.status} TIME: ${item.time} " +
+                        "DESC: ${item.description} STATUS: ${item.status} TIME: ${item.time/1000}s " +
                         "isPlaying: ${item.isPlaying} isStop: ${item.isStop} " +
                         "isVisible: ${item.isVisible} lastChanged: ${item.lastChanged}")
             }
@@ -201,7 +201,7 @@ class HomeFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             var id = getLastChangeId()
             itemIsVisible(id)
-            val newItem = ListItem(getTaskText2(id), getTaskDescr2(id), true, getTaskTime2(id))
+            val newItem = ListItem(getTaskText2(id), getTaskDescr2(id), true, getTaskTime2(id), true)
             dataList.set(id, newItem)
             adapter.notifyItemChanged(id)
             binding.recyclerView.scrollToPosition(id)
