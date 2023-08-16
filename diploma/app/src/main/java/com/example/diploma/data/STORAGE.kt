@@ -12,6 +12,9 @@ class STORAGE {
         var maxPosition:Int = -1
         var DatabaseTodayListAlreadyCreated = false
         var TodayListAlreadyCreated = false
+        var TodayFTListAlreadyCreated = false
+        var ftListVisible = true
+        var FTid = -1
         const val LIST_LIMIT = 5
         const val IS_RUNNING = 1
         const val ON_PAUSE = 2

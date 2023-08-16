@@ -164,8 +164,8 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
     }
 
     private fun hideItems(holder: ViewHolder){
-        hideFrame(holder)
         hideDescription(holder)
+        hideFrame(holder)
     }
 
     private fun showItem(holder: ViewHolder, item: ListItem){
@@ -180,7 +180,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         holder.etDescription.setText(item.description)
         holder.chronometer.base = SystemClock.elapsedRealtime() - item.currentTime
         setTheme(1, holder)
-        }
+    }
 
     private fun showTodayListTable(){
         Log.d("showDatabaseToday", "showTodayListTable2() is called")
@@ -204,8 +204,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
             setItemLastChanged(position)
             CoroutineScope(Dispatchers.Main).launch {
                 if (getStopItem(position) == 1) {
-                    hideDescription(holder)
-                    hideFrame(holder)
+                    hideItems(holder)
                 }
                 if (thereIsTask(holder)) {
                     if (!item.onPause) pauseChronometer(holder, position, item)

@@ -43,6 +43,8 @@ interface DaoTodayList {
     fun getLastChangedItemId():Int
     @Query("UPDATE today_list SET status = :status WHERE lastChanged = 1")
     fun setItemStatus(status:String)
+    @Query("SELECT status FROM today_list WHERE id = :id")
+    fun getItemStatus(id:Int):String
     @Query("UPDATE today_list SET task = :task WHERE id = :id")
     fun setItemName(task:String, id:Int)
     @Query("SELECT task FROM today_list WHERE id = :itemID")
