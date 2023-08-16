@@ -31,6 +31,7 @@ class ListFtAdapter (private val data: List<ListItem>, private val context: Cont
         val item = data[position]
         setupItem(holder, item)
         displayingItems(holder,item)
+        btn_renew(holder, position, item)
     }
 
     override fun getItemCount(): Int = data.size
@@ -53,6 +54,32 @@ class ListFtAdapter (private val data: List<ListItem>, private val context: Cont
     private fun showItems(holder: ViewHolder, item: ListItem){
         if(item.text!="") holder.ftFrame.visibility = VISIBLE
         else hideItems(holder)
+    }
+
+    private fun btn_renew(holder: ViewHolder, position: Int, item: ListItem){
+        holder.butRenew.setOnClickListener {
+            setItemLastChanged(position)
+            clearItem(holder, item)
+            STORAGE.returnPressed = true
+        }
+    }
+
+    private fun clearItem(holder: ViewHolder, item: ListItem){
+        item.text = ""
+        item.status = context.getString(R.string.task_success)
+        holder.ftName.text = item.text
+        holder.ftStatus.text = item.status
+        holder.ftFrame.visibility = GONE
+    }
+
+    private fun setItemLastChanged(position: Int){
+        var threadItemLastChanged = Thread {
+            val database = DatabaseMain.getDatabase(context)
+            database.getDaoTodayList().unsetItemLastChanged()
+            database.getDaoTodayList().setItemLastChanged(position)
+        }
+        threadItemLastChanged.start()
+        threadItemLastChanged.join()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)

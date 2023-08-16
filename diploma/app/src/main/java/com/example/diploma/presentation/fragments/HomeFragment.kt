@@ -40,7 +40,7 @@ class HomeFragment : Fragment() {
     private val dataListFT = mutableListOf<ListItem>()
 
     private val handler = Handler(Looper.getMainLooper())
-    private val pollingIntervalMillis: Long = 1000
+    private val pollingIntervalMillis: Long = 500
 
     private lateinit var formattedDate: String
 
@@ -306,6 +306,10 @@ class HomeFragment : Fragment() {
 
     private val pollRunnable = object : Runnable {
         override fun run() {
+            if(STORAGE.returnPressed){
+                reShowItem()
+                STORAGE.returnPressed = false
+            }
             showFtListFrame()
             checkConfirmDialog()
             handler.postDelayed(this, pollingIntervalMillis)
@@ -369,9 +373,10 @@ class HomeFragment : Fragment() {
     }
 
     private fun updateTaskStatus2(status:String){
+        var id = getLastChangeId()
         var threadUpdateStatus = Thread{
             val database = DatabaseMain.getDatabase(requireContext())
-            database.getDaoTodayList().setItemStatus(status)
+            database.getDaoTodayList().setItemStatus(status, id)
         }
         threadUpdateStatus.start()
         threadUpdateStatus.join()

@@ -3,7 +3,6 @@ package com.example.diploma.presentation.adapters
 import android.content.Context
 import android.os.Build
 import android.os.SystemClock
-import android.provider.Settings.Global.getString
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -210,12 +209,25 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
                     if (!item.onPause) pauseChronometer(holder, position, item)
                     writeTaskToDB(holder, position)
                     showTodayListTable()
-                    callConfirmDialog(holder, item)
+                    callConfirmDialog(holder, position, item)
                 } else {
+                    deleteThisItem(position)
                     setItemNotVisible(position)
                 }
             }
         }
+    }
+
+    private fun deleteThisItem(position: Int){
+        var threadDeleteItem = Thread{
+            val database = DatabaseMain.getDatabase(context)
+            database.getDaoTodayList().setItemName("", position)
+            database.getDaoTodayList().setItemDesc("", position)
+            database.getDaoTodayList().setItemTime(0L, position)
+            database.getDaoTodayList().setItemStatus("", position)
+        }
+        threadDeleteItem.start()
+        threadDeleteItem.join()
     }
 
     private fun setItemNotVisible(position: Int){
@@ -228,9 +240,9 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         threadSetInvisible.join()
     }
 
-    private fun callConfirmDialog(holder: ViewHolder, item: ListItem){
+    private fun callConfirmDialog(holder: ViewHolder, position: Int, item: ListItem){
         CoroutineScope(Dispatchers.Main).launch{
-            if(chronometerNotStarted(holder, item)) updateTaskStatus(context.getString(R.string.task_notStarted))
+            if(chronometerNotStarted(holder, item)) updateTaskStatus(context.getString(R.string.task_notStarted), position)
             else STORAGE.IsPressed = true
         }
     }
@@ -247,10 +259,10 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         threadInsertTodayList.join()
     }
 
-    private fun updateTaskStatus(status:String){
+    private fun updateTaskStatus(status:String, position: Int){
         var threadUpdateStatus = Thread{
             val database = DatabaseMain.getDatabase(context)
-            database.getDaoTodayList().setItemStatus(status)
+            database.getDaoTodayList().setItemStatus(status, position)
         }
         threadUpdateStatus.start()
         threadUpdateStatus.join()
