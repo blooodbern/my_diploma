@@ -37,8 +37,8 @@ class ListFtAdapter (private val data: List<ListItem>, private val context: Cont
     override fun getItemCount(): Int = data.size
 
     private fun setupItem(holder: ViewHolder, item: ListItem){
-        holder.ftName.setText(item.text)
-        holder.ftStatus.setText(item.status)
+        holder.ftName.text = item.text
+        holder.ftStatus.text = getStatus(item.status)
     }
 
     private fun displayingItems(holder: ViewHolder,item: ListItem){
@@ -66,10 +66,20 @@ class ListFtAdapter (private val data: List<ListItem>, private val context: Cont
 
     private fun clearItem(holder: ViewHolder, item: ListItem){
         item.text = ""
-        item.status = context.getString(R.string.task_success)
+        item.status = 3
         holder.ftName.text = item.text
-        holder.ftStatus.text = item.status
+        holder.ftStatus.text = getStatus(item.status)
         holder.ftFrame.visibility = GONE
+    }
+
+    private fun getStatus(statusId:Int):String{
+        when(statusId){
+            1 -> return context.getString(R.string.task_unsatis)
+            2 -> return context.getString(R.string.task_partly)
+            3 -> return context.getString(R.string.task_success)
+            4 -> return context.getString(R.string.task_inProcess)
+        }
+        return context.getString(R.string.task_notStarted)
     }
 
     private fun setItemLastChanged(position: Int){

@@ -3,6 +3,8 @@ package com.example.diploma.presentation.adapters
 import android.content.Context
 import android.os.Build
 import android.os.SystemClock
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -49,6 +51,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         setCursor(holder)
         editDescription(holder, item)
         timer(holder, position, item)
+        saveUserTask(holder, position, item)
     }
 
     override fun getItemCount(): Int {
@@ -101,13 +104,14 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
 
     private fun pauseChronometer(holder: ViewHolder, position: Int,item: ListItem){
         holder.butPlayPause.setImageResource(R.drawable.ic_play_36)
-        val currentTime = getCurItemTime2(holder, item)
+        val currentTime = getCurItemTime(holder, item)
         saveCurTime(currentTime, position)
         holder.chronometer.stop()
         item.onPause = true
+        item.currentTime = currentTime
     }
 
-    private fun getCurItemTime2(holder: ViewHolder, item: ListItem):Long{
+    private fun getCurItemTime(holder: ViewHolder, item: ListItem):Long{
         var diff = 0L
         if (item.timerStarted) {
             diff = SystemClock.elapsedRealtime() - holder.chronometer.base
@@ -117,7 +121,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
     }
 
     private fun chronometerNotStarted(holder: ViewHolder, item: ListItem):Boolean{
-        if (getCurItemTime2(holder, item) == 0L) return true
+        if (getCurItemTime(holder, item) == 0L) return true
         return false
     }
 
@@ -171,6 +175,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         if (item.showItem) {
             showFrame(holder)
             item.showItem = false
+            item.isStop = false
         }
     }
 
@@ -207,12 +212,15 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
                 }
                 if (thereIsTask(holder)) {
                     if (!item.onPause) pauseChronometer(holder, position, item)
+                    item.isStop = true
                     writeTaskToDB(holder, position)
                     showTodayListTable()
                     callConfirmDialog(holder, position, item)
                 } else {
                     deleteThisItem(position)
                     setItemNotVisible(position)
+                    item.isVisible=false
+                    Log.d("TAG", "stopChronometer() set item[${position}] isVisible=false")
                 }
             }
         }
@@ -224,7 +232,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
             database.getDaoTodayList().setItemName("", position)
             database.getDaoTodayList().setItemDesc("", position)
             database.getDaoTodayList().setItemTime(0L, position)
-            database.getDaoTodayList().setItemStatus("", position)
+            database.getDaoTodayList().setItemStatus(0, position)
         }
         threadDeleteItem.start()
         threadDeleteItem.join()
@@ -242,7 +250,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
 
     private fun callConfirmDialog(holder: ViewHolder, position: Int, item: ListItem){
         CoroutineScope(Dispatchers.Main).launch{
-            if(chronometerNotStarted(holder, item)) updateTaskStatus(context.getString(R.string.task_notStarted), position)
+            if(chronometerNotStarted(holder, item)) updateTaskStatus(0, position)
             else STORAGE.IsPressed = true
         }
     }
@@ -259,7 +267,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         threadInsertTodayList.join()
     }
 
-    private fun updateTaskStatus(status:String, position: Int){
+    private fun updateTaskStatus(status:Int, position: Int){
         var threadUpdateStatus = Thread{
             val database = DatabaseMain.getDatabase(context)
             database.getDaoTodayList().setItemStatus(status, position)
@@ -345,6 +353,23 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         holder.itemFrame.visibility = GONE
     }
 
+
+    private fun saveUserTask(holder: ViewHolder, position: Int, item: ListItem){
+        holder.etTask.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                item.id = position
+                item.text = holder.etTask.text.toString()
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+            }
+        })
+
+
+    }
 
 
     //******************

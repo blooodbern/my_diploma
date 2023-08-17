@@ -15,6 +15,8 @@ interface DaoTodayList {
     fun getMaxID(): Int
     @Query("SELECT id FROM today_list WHERE id = (SELECT MIN(id) FROM today_list WHERE isVisible = 0)")
     fun getMinInvisibleID(): Int
+    @Query("UPDATE today_list SET isVisible = :visible WHERE (id = :itemID)")
+    fun updateItemVisibleStatus(visible:Boolean,itemID:Int)
     @Query("UPDATE today_list SET isVisible = 1 WHERE (id = :itemID)")
     fun setItemVisible(itemID:Int)
     @Query("UPDATE today_list SET isVisible = 0 WHERE (id = :itemID)")
@@ -23,6 +25,10 @@ interface DaoTodayList {
     fun checkInvisibleItems(): Int
     @Query("SELECT COUNT(*) FROM today_list WHERE isVisible = 1")
     fun checkVisibleItems(): Int
+    @Query("SELECT * FROM today_list WHERE (isVisible = 1 AND isStop = 0 AND task <> '')")
+    fun getVisibleItems(): List<TodayList>
+    @Query("UPDATE today_list SET isStop = :stop WHERE (id = :itemID)")
+    fun updateItemStopStatus(stop:Boolean,itemID:Int)
     @Query("UPDATE today_list SET isStop = 1 WHERE (id = :itemID)")
     fun setItemStop(itemID:Int)
     @Query("UPDATE today_list SET isStop = 0 WHERE (id = :itemID)")
@@ -35,6 +41,8 @@ interface DaoTodayList {
     fun checkItemIsPlaying(itemID:Int):Boolean
     @Query("SELECT COUNT(*) FROM today_list WHERE (id = :itemID AND isStop = 1)")
     fun checkItemStop(itemID:Int): Int
+    @Query("SELECT * FROM today_list WHERE isStop = 1")
+    fun getStopItems(): List<TodayList>
     @Query("UPDATE today_list SET lastChanged = 1 WHERE (id = :itemID)")
     fun setItemLastChanged(itemID:Int)
     @Query("UPDATE today_list SET lastChanged = 0 WHERE (lastChanged = 1)")
@@ -42,9 +50,9 @@ interface DaoTodayList {
     @Query("SELECT id FROM today_list WHERE lastChanged = 1")
     fun getLastChangedItemId():Int
     @Query("UPDATE today_list SET status = :status WHERE id = :id")
-    fun setItemStatus(status:String, id:Int)
+    fun setItemStatus(status:Int, id:Int)
     @Query("SELECT status FROM today_list WHERE id = :id")
-    fun getItemStatus(id:Int):String
+    fun getItemStatus(id:Int):Int
     @Query("UPDATE today_list SET task = :task WHERE id = :id")
     fun setItemName(task:String, id:Int)
     @Query("SELECT task FROM today_list WHERE id = :itemID")

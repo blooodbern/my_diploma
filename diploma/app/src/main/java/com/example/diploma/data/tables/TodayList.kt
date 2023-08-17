@@ -15,7 +15,7 @@ data class TodayList(
     @ColumnInfo(name = "time")
     var time: Long,
     @ColumnInfo(name = "status")
-    var status: String,
+    var status: Int,
     @ColumnInfo(name = "isPlaying")
     var isPlaying: Boolean,
     @ColumnInfo(name = "isStop")
