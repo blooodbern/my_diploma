@@ -35,6 +35,31 @@ import java.time.chrono.ChronoLocalDateTime
 
 class ListAdapter(private val data: MutableList<ListItem>, private val context: Context) : RecyclerView.Adapter<ListAdapter.ViewHolder>() {
 
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        TODO("Not yet implemented")
+    }
+
+    override fun getItemCount(): Int {
+        TODO("Not yet implemented")
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        TODO("Not yet implemented")
+    }
+
+    inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val etTask: EditText = view.findViewById(R.id.et_task)
+        val butDescr: ImageButton = view.findViewById(R.id.ib_descr)
+        val etDescription: EditText = view.findViewById(R.id.et_description)
+        val descriptionForm: CardView = view.findViewById(R.id.cv_description)
+        val chronometer: Chronometer = view.findViewById(R.id.chronometer)
+        val butStop: ImageButton = view.findViewById(R.id.ib_stop)
+        val butPlayPause: ImageButton = view.findViewById(R.id.ib_play_pause)
+        val itemFrame: CardView = view.findViewById(R.id.finished_task)
+    }
+}
+/*
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.home_list_model, parent, false)
         return ViewHolder(view)
@@ -116,7 +141,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         if (item.timerStarted) {
             diff = SystemClock.elapsedRealtime() - holder.chronometer.base
         }
-        Log.d("Vojt", "get current = diff: ${diff/1000}s")
+        //Log.d("Vojt", "get current = diff: ${diff/1000}s")
         return diff
     }
 
@@ -126,7 +151,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
     }
 
     private fun saveCurTime(time:Long, position: Int){
-        Log.d("TAG", "saveCurTime2() time = ${time/1000} s position: ${position}")
+        //Log.d("TAG", "saveCurTime2() time = ${time/1000} s position: ${position}")
         var threadSaveTime = Thread{
             val database = DatabaseMain.getDatabase(context)
             database.getDaoTodayList().setItemTime(time, position)
@@ -172,10 +197,9 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
     }
 
     private fun showItem(holder: ViewHolder, item: ListItem){
-        if (item.showItem) {
+        if (item.showItem && !item.isStop) {
             showFrame(holder)
             item.showItem = false
-            item.isStop = false
         }
     }
 
@@ -220,7 +244,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
                     deleteThisItem(position)
                     setItemNotVisible(position)
                     item.isVisible=false
-                    Log.d("TAG", "stopChronometer() set item[${position}] isVisible=false")
+                    //Log.d("TAG", "stopChronometer() set item[${position}] isVisible=false")
                 }
             }
         }
@@ -390,4 +414,5 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         val butPlayPause: ImageButton = view.findViewById(R.id.ib_play_pause)
         val itemFrame: CardView = view.findViewById(R.id.finished_task)
     }
-}
+
+    */

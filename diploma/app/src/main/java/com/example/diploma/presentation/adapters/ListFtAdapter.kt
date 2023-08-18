@@ -21,6 +21,27 @@ import java.time.LocalDate
 class ListFtAdapter (private val data: List<ListItem>, private val context: Context):
     RecyclerView.Adapter<ListFtAdapter.ViewHolder>()
 {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ListFtAdapter.ViewHolder {
+        TODO("Not yet implemented")
+    }
+
+    override fun onBindViewHolder(holder: ListFtAdapter.ViewHolder, position: Int) {
+        TODO("Not yet implemented")
+    }
+
+    override fun getItemCount(): Int {
+        TODO("Not yet implemented")
+    }
+
+    inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val butRenew: ImageButton = view.findViewById(R.id.ib_renew)
+        val ftName: TextView = view.findViewById(R.id.tv_finished_task)
+        val ftStatus: TextView = view.findViewById(R.id.status_ft)
+        val ftFrame: CardView = view.findViewById(R.id.finished_task)
+    }
+}
+        /*
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.homeft_list_model, parent, false)
         return ViewHolder(view)
@@ -52,7 +73,7 @@ class ListFtAdapter (private val data: List<ListItem>, private val context: Cont
     }
 
     private fun showItems(holder: ViewHolder, item: ListItem){
-        if(item.text!="") holder.ftFrame.visibility = VISIBLE
+        if(item.text!="" && item.isStop) holder.ftFrame.visibility = VISIBLE
         else hideItems(holder)
     }
 
@@ -103,4 +124,4 @@ class ListFtAdapter (private val data: List<ListItem>, private val context: Cont
         val ftStatus: TextView = view.findViewById(R.id.status_ft)
         val ftFrame: CardView = view.findViewById(R.id.finished_task)
     }
-}
+*/

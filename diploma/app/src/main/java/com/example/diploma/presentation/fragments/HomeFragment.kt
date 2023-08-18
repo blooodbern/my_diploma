@@ -16,6 +16,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.diploma.R
+import com.example.diploma.data.SETTINGS
 import com.example.diploma.databinding.ListHomeBinding
 import com.example.diploma.presentation.adapters.ListAdapter
 import com.example.diploma.presentation.adapters.ListFtAdapter
@@ -23,6 +24,7 @@ import com.example.diploma.domain.ListItem
 import com.example.diploma.data.STORAGE
 import com.example.diploma.data.database.DatabaseMain
 import com.example.diploma.data.tables.AllTasksByAllTime
+import com.example.diploma.data.tables.SetupData
 import com.example.diploma.data.tables.TodayList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,8 +33,74 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import kotlin.reflect.KProperty
 
 class HomeFragment : Fragment() {
+
+    private lateinit var adapter: ListAdapter
+    private lateinit var adapterFT: ListFtAdapter
+    private val dataList = mutableListOf<ListItem>()
+    private val dataListFT = mutableListOf<ListItem>()
+
+    private var _binding: ListHomeBinding? = null
+    private val binding get() = _binding!!
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = ListHomeBinding.inflate(inflater, container, false)
+
+        setCurDate()
+        initAdapters()
+        CoroutineScope(Dispatchers.IO).launch{setupDefaultSettings()}
+
+        return binding.root
+    }
+
+    private fun setCurDate(){
+        val currentDate = Calendar.getInstance().time
+        val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+        var formattedDate = dateFormat.format(currentDate)
+        binding.curDate.text = formattedDate
+    }
+
+    private fun initAdapters(){
+        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        adapter = ListAdapter(dataList, requireContext())
+        binding.recyclerView.adapter = adapter
+
+        binding.recyclerViewFT.layoutManager = LinearLayoutManager(requireContext())
+        adapterFT = ListFtAdapter(dataListFT, requireContext())
+        binding.recyclerViewFT.adapter = adapterFT
+    }
+
+    private suspend fun setupDefaultSettings(){
+        val settingsAmount = SETTINGS().settingsList.size
+        if (rowsInSetupTable()<settingsAmount){
+            withContext(Dispatchers.IO){
+                val database = DatabaseMain.getDatabase(requireContext())
+                for (i in 0 until settingsAmount){
+                    val setting = SetupData(
+                        null,
+                        SETTINGS().settingsList[0],
+                        0
+                    )
+                    database.getDaoSetupData().insertSettings(setting)
+                }
+            }
+        }
+    }
+
+    private suspend fun rowsInSetupTable():Int = withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(requireContext())
+        return@withContext database.getDaoSetupData().checkIfSettingsTableEmpty()
+    }
+
+
+}
+    /*
 
     private lateinit var adapter: ListAdapter
     private lateinit var adapterFT: ListFtAdapter
@@ -100,6 +168,22 @@ class HomeFragment : Fragment() {
     }
 
     private fun saveItems(){
+        CoroutineScope(Dispatchers.Main).launch{
+            val items = dataList
+            val database = DatabaseMain.getDatabase(requireContext())
+            for (item in items){
+                database.getDaoTodayList().setItemName(item.text,item.id)
+                database.getDaoTodayList().setItemDesc(item.description,item.id)
+                database.getDaoTodayList().setItemTime(item.currentTime,item.id)
+                database.getDaoTodayList().setItemStatus(item.status,item.id)
+                database.getDaoTodayList().updateItemStopStatus(item.isStop,item.id)
+                // database.getDaoTodayList().updateItemVisibleStatus(item.isVisible,item.id)
+            }
+        }
+        showDataList()
+        showTodayListTable()
+
+        /*
         var threadSaveItems = Thread{
             val items = dataList
             val database = DatabaseMain.getDatabase(requireContext())
@@ -114,32 +198,20 @@ class HomeFragment : Fragment() {
         }
         threadSaveItems.start()
         threadSaveItems.join()
-        showDataList()
-        showTodayListTable()
+         */
+
     }
 
-    private fun getMaxID():Int{
-        var idMax:Int=-1
-        var thread2 = Thread{
-            val database = DatabaseMain.getDatabase(requireContext())
-            idMax = database.getDaoTodayList().getMaxID()
-        }
-        thread2.start()
-        thread2.join()
-        Log.d("TAG", "idMax = ${idMax}")        
-        return idMax
+    private suspend fun getMaxID():Int = withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(requireContext())
+        //Log.d("TAG", "idMax = ${idMax}")
+        return@withContext database.getDaoTodayList().getMaxID()
     }
 
-    private fun getMinInvisID():Int{
-        var minId:Int = -1
-        var thread3 = Thread{
-            val database = DatabaseMain.getDatabase(requireContext())
-            minId = database.getDaoTodayList().getMinInvisibleID()
-        }
-        thread3.start()
-        thread3.join()
-        Log.d("TAG", "minId = ${minId}")
-        return minId
+    private suspend fun getMinInvisID():Int = withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(requireContext())
+        //Log.d("TAG", "minId = ${minId}")
+        return@withContext database.getDaoTodayList().getMinInvisibleID()
     }
 
     private fun showDataList(){
@@ -150,55 +222,82 @@ class HomeFragment : Fragment() {
 
     private fun itemIsVisible(itemId: Int){
         dataList[itemId].isVisible = true
-        Log.d("TAG", "--- dataList[${itemId}] text: ${dataList[itemId].text} isVisible: ${dataList[itemId].isVisible}")
+       // Log.d("TAG", "--- dataList[${itemId}] text: ${dataList[itemId].text} isVisible: ${dataList[itemId].isVisible}")
         showDataList()
+        CoroutineScope(Dispatchers.Main).launch{
+            val database = DatabaseMain.getDatabase(requireContext())
+            database.getDaoTodayList().setItemVisible(itemId)
+        }
+
+        /*
         var thread4 = Thread{
             val database = DatabaseMain.getDatabase(requireContext())
             database.getDaoTodayList().setItemVisible(itemId)
         }
         thread4.start()
         thread4.join()
+
+         */
     }
 
-    private fun checkLimit():Int{
-        var invisibleItemsAmount:Int = -1
-        var thread5 = Thread{
-            val database = DatabaseMain.getDatabase(requireContext())
-            invisibleItemsAmount = database.getDaoTodayList().checkInvisibleItems()
-        }
-        thread5.start()
-        thread5.join()
-        Log.d("TAG", "visibleItemsAmount = ${invisibleItemsAmount}")
-        return invisibleItemsAmount
+    private suspend fun checkLimit():Int =  withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(requireContext())
+       // Log.d("TAG", "visibleItemsAmount = ${invisibleItemsAmount}")
+        return@withContext database.getDaoTodayList().checkInvisibleItems()
     }
 
     private fun fillTodayDataBase(){
-        if (!STORAGE.DatabaseTodayListAlreadyCreated && getMaxID() != STORAGE.LIST_LIMIT-1){
-            for (i in 0 until STORAGE.LIST_LIMIT){
-                val task = TodayList(
-                    i,
-                    "",
-                    "",
-                    0L,
-                    0,
-                    false,
-                    false,
-                    false,
-                    false
-                )
-                var thread1 = Thread{
-                    val database = DatabaseMain.getDatabase(requireContext())
-                    database.getDaoTodayList().insertItem(task)
+        CoroutineScope(Dispatchers.IO).launch{
+            if (!STORAGE.DatabaseTodayListAlreadyCreated && getMaxID() != STORAGE.LIST_LIMIT-1){
+                for (i in 0 until STORAGE.LIST_LIMIT){
+                    val task = TodayList(
+                        i,
+                        "",
+                        "",
+                        0L,
+                        0,
+                        false,
+                        false,
+                        false,
+                        false
+                    )
+                    CoroutineScope(Dispatchers.Main).launch{
+                        val database = DatabaseMain.getDatabase(requireContext())
+                        database.getDaoTodayList().insertItem(task)
+                    }
+
+                    /*
+                    var thread1 = Thread{
+                        val database = DatabaseMain.getDatabase(requireContext())
+                        database.getDaoTodayList().insertItem(task)
+                    }
+                    thread1.start()
+                    thread1.join()
+
+                     */
                 }
-                thread1.start()
-                thread1.join()
+                STORAGE.DatabaseTodayListAlreadyCreated = true
             }
-            STORAGE.DatabaseTodayListAlreadyCreated = true
         }
         showTodayListTable()
     }
 
     private fun showTodayListTable(){
+        Log.d("showDatabaseToday", "showTodayListTable() is called, DatabaseTodayListAlreadyCreated = ${STORAGE.DatabaseTodayListAlreadyCreated}")
+        CoroutineScope(Dispatchers.IO).launch{
+            val database = DatabaseMain.getDatabase(requireContext())
+            val items: List<TodayList> = database.getDaoTodayList().getAllTasks()
+            withContext(Dispatchers.Main){
+                for (item in items){
+                    Log.d("showDatabaseToday", "ID: ${item.id} TASK: ${item.task} " +
+                            "DESC: ${item.description} STATUS: ${item.status} TIME: ${item.time/1000}s " +
+                            "isPlaying: ${item.isPlaying} isStop: ${item.isStop} " +
+                            "isVisible: ${item.isVisible} lastChanged: ${item.lastChanged}")
+                }
+            }
+        }
+
+/*
         Log.d("showDatabaseToday", "showTodayListTable() is called, DatabaseTodayListAlreadyCreated = ${STORAGE.DatabaseTodayListAlreadyCreated}")
         var thread2 = Thread {
             val database = DatabaseMain.getDatabase(requireContext())
@@ -212,23 +311,26 @@ class HomeFragment : Fragment() {
         }
         thread2.start()
         thread2.join()
+
+ */
     }
 
     private fun addBtnClicked(){
         binding.btnAddItem.setOnClickListener {
-            if(checkLimit()>0) showNewItem()
-            else Toast.makeText(requireContext(), "limit exceeded", Toast.LENGTH_SHORT).show()
-            Log.d("TAG", "addBtnClicked2() current limit = ${checkLimit()}")
+            CoroutineScope(Dispatchers.Main).launch{
+                if(checkLimit()>0) showNewItem()
+                else Toast.makeText(requireContext(), "limit exceeded", Toast.LENGTH_SHORT).show()
+            }
+           // Log.d("TAG", "addBtnClicked2() current limit = ${checkLimit()}")
             showTodayListTable()
         }
     }
 
     private fun showNewItem(){
+        CoroutineScope(Dispatchers.Main).launch{
         var id = getMinInvisID()
         itemIsVisible(id)
-        Log.d("TAG", "showNewItem() call itemIsVisible(${id})")
-
-        CoroutineScope(Dispatchers.Main).launch{
+        //Log.d("TAG", "showNewItem() call itemIsVisible(${id})")
         val newItem = ListItem(id, getTaskText(id), getTaskDescr(id), getTaskStatus(id),true)
         dataList.set(id, newItem)
         adapter.notifyItemChanged(id)
@@ -240,7 +342,7 @@ class HomeFragment : Fragment() {
         CoroutineScope(Dispatchers.Main).launch {
             var id = getLastChangeId()
             itemIsVisible(id)
-            val newItem = ListItem(id, getTaskText(id), getTaskDescr(id), getTaskStatus(id), true, getTaskTime(id), true)
+            val newItem = ListItem(id, getTaskText(id), getTaskDescr(id), getTaskStatus(id), true, getTaskTime(id), true, false)
             dataList.set(id, newItem)
             adapter.notifyItemChanged(id)
             binding.recyclerView.scrollToPosition(id)
@@ -259,7 +361,7 @@ class HomeFragment : Fragment() {
                 visibleItem.status = item.status
                 visibleItem.isVisible = item.isVisible
                 visibleItem.showItem = true
-                dataList.add(visibleItem)
+                dataList.set(visibleItem.id,visibleItem)
             }
             adapter.notifyDataSetChanged()
         }
@@ -281,22 +383,22 @@ class HomeFragment : Fragment() {
             adapterFT.notifyDataSetChanged()
             STORAGE.TodayFTListAlreadyCreated = true
         }
-        Log.d("TAG", "createFTList() TodayFTListAlreadyCreated = ${STORAGE.TodayFTListAlreadyCreated}")
+       // Log.d("TAG", "createFTList() TodayFTListAlreadyCreated = ${STORAGE.TodayFTListAlreadyCreated}")
     }
 
     private fun fillFTList(){
-            CoroutineScope(Dispatchers.Main).launch{
-                val items = getStopItems()
-                val newItem = ListItem(-1,"", "", 0)
-                for (item in items){
-                    newItem.id = item.id
-                    newItem.text = item.task
-                    newItem.description = item.description
-                    newItem.status = item.status
-                    dataListFT.add(newItem)
-                }
+        CoroutineScope(Dispatchers.Main).launch{
+            val items = getStopItems()
+            val newItem = ListItem(-1,"", "", 0)
+            for (item in items){
+                newItem.id = item.id
+                newItem.text = item.task
+                newItem.description = item.description
+                newItem.status = item.status
+                dataListFT.add(newItem)
             }
-            adapterFT.notifyDataSetChanged()
+        }
+        adapterFT.notifyDataSetChanged()
     }
 
     private fun btn_showFTlist(){
@@ -319,7 +421,7 @@ class HomeFragment : Fragment() {
             var id = getLastChangeId()
             itemIsVisible(id)
             if (STORAGE.FTid < STORAGE.LIST_LIMIT-1) STORAGE.FTid++
-            val newItem = ListItem(STORAGE.FTid, getTaskText(id), getTaskDescr(id),getTaskStatus(id))
+            val newItem = ListItem(STORAGE.FTid, getTaskText(id), getTaskDescr(id),getTaskStatus(id), false,getTaskTime(id),true,true)
             dataListFT.set(STORAGE.FTid, newItem)
             adapterFT.notifyItemChanged(STORAGE.FTid)
         }
@@ -350,15 +452,10 @@ class HomeFragment : Fragment() {
         return@withContext database.getDaoTodayList().getStopItems()
     }
 
-    private fun getLastChangeId():Int{
-        var id:Int = -1
-        var threadLastChange = Thread{
-            val database = DatabaseMain.getDatabase(requireContext())
-            id = database.getDaoTodayList().getLastChangedItemId()
-        }
-        threadLastChange.start()
-        threadLastChange.join()
-        return id
+    private suspend fun getLastChangeId():Int = withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(requireContext())
+        database.getDaoTodayList().getLastChangedItemId()
+        return@withContext database.getDaoTodayList().getLastChangedItemId()
     }
 
 
@@ -374,7 +471,7 @@ class HomeFragment : Fragment() {
             STORAGE.TodayListAlreadyCreated = true
             showDataList()
         }
-        Log.d("TAG", "createList() TodayListAlreadyCreated = ${STORAGE.TodayListAlreadyCreated}")
+       // Log.d("TAG", "createList() TodayListAlreadyCreated = ${STORAGE.TodayListAlreadyCreated}")
     }
 
     //***********
@@ -462,14 +559,12 @@ class HomeFragment : Fragment() {
     }
 
     private fun updateTaskStatus(status:Int){
-        var id = getLastChangeId()
-        dataList[id].status = status
-        var threadUpdateStatus = Thread{
+        CoroutineScope(Dispatchers.Main).launch{
+            var id = getLastChangeId()
+            dataList[id].status = status
             val database = DatabaseMain.getDatabase(requireContext())
             database.getDaoTodayList().setItemStatus(status, id)
         }
-        threadUpdateStatus.start()
-        threadUpdateStatus.join()
     }
     //***********
 
@@ -485,4 +580,4 @@ class HomeFragment : Fragment() {
         stopPolling()
         saveItems()
     }
-}
+    */
