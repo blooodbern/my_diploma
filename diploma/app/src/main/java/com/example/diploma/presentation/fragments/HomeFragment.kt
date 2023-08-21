@@ -42,6 +42,8 @@ class HomeFragment : Fragment() {
     private val dataList = mutableListOf<ListItem>()
     private val dataListFT = mutableListOf<ListItem>()
 
+    private var todayDate:Long = 0L
+
     private var _binding: ListHomeBinding? = null
     private val binding get() = _binding!!
 
@@ -54,13 +56,26 @@ class HomeFragment : Fragment() {
 
         setCurDate()
         initAdapters()
-        CoroutineScope(Dispatchers.IO).launch{setupDefaultSettings()}
+        CoroutineScope(Dispatchers.Main).launch{
+            withContext(Dispatchers.IO){
+                setupDefaultSettings()
+                showLogSetupData()
+            }
+            showLogTodayList()
+            createTodayList()
+            showLogTodayList()
+            withContext(Dispatchers.IO){
+                setDefaultDataInTableTodayList()
+                showLogTableTodayList()
+            }
+        }
 
         return binding.root
     }
 
     private fun setCurDate(){
         val currentDate = Calendar.getInstance().time
+        todayDate = currentDate.time
         val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
         var formattedDate = dateFormat.format(currentDate)
         binding.curDate.text = formattedDate
@@ -78,13 +93,16 @@ class HomeFragment : Fragment() {
 
     private suspend fun setupDefaultSettings(){
         val settingsAmount = SETTINGS().settingsList.size
+        Log.d("settingsList", "settingsAmount = ${settingsAmount} " +
+                "rowsInSetupTable = ${rowsInSetupTable()} " +
+                "rowsInSetupTable()<settingsAmount = ${rowsInSetupTable()<settingsAmount}")
         if (rowsInSetupTable()<settingsAmount){
             withContext(Dispatchers.IO){
                 val database = DatabaseMain.getDatabase(requireContext())
                 for (i in 0 until settingsAmount){
                     val setting = SetupData(
                         null,
-                        SETTINGS().settingsList[0],
+                        SETTINGS().settingsList[i],
                         0
                     )
                     database.getDaoSetupData().insertSettings(setting)
@@ -98,6 +116,130 @@ class HomeFragment : Fragment() {
         return@withContext database.getDaoSetupData().checkIfSettingsTableEmpty()
     }
 
+
+
+    private suspend fun showLogSetupData(){
+        for (i in 1 .. rowsInSetupTable()){
+            Log.d("setupList", "setting id: ${i} name: ${getSettingName(i)} value: ${getSettingValue(getSettingName(i))}")
+        }
+    }
+
+    private suspend fun createTodayList(){
+        Log.d("dataList", "createTodayList() called")
+        if (getSettingValue("ListTodayListAlreadyCreated")==0 && getSettingValue("DatabaseTodayListAlreadyCreated")==0){
+            setDefaultDataInTodayDataList()
+            val database = DatabaseMain.getDatabase(requireContext())
+            withContext(Dispatchers.IO){
+                database.getDaoSetupData().setSettings("ListTodayListAlreadyCreated",1)
+            }
+        }
+        else {
+            setDefaultDataInTodayDataList()
+            fillTodayList()
+        }
+    }
+
+    private suspend fun fillTodayList(){
+        withContext(Dispatchers.IO) {
+            val database = DatabaseMain.getDatabase(requireContext())
+            val items: List<TodayList> = database.getDaoTodayList().getAllTasks()
+            withContext(Dispatchers.Main){
+                for (item in items) {
+                    val listID = item.id - 1
+                    dataList[listID].id = listID
+                    dataList[listID].text = item.task
+                    dataList[listID].description = item.description
+                    dataList[listID].date = todayDate
+                    dataList[listID].time = item.time
+                    dataList[listID].isPlaying = item.isPlaying
+                    dataList[listID].isStop = item.isStop
+                    dataList[listID].status = item.status
+                    dataList[listID].isVisible = item.isVisible
+                    dataList[listID].lastChanged = item.lastChanged
+                    adapter.notifyItemChanged(listID)
+                }
+            }
+        }
+    }
+
+    private suspend fun getSettingValue(setting:String):Int = withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(requireContext())
+        return@withContext database.getDaoSetupData().getSettings(setting)
+    }
+
+    private suspend fun getSettingName(id:Int):String = withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(requireContext())
+        return@withContext database.getDaoSetupData().getSettingsName(id)
+    }
+
+    private fun setDefaultDataInTodayDataList(){
+        Log.d("dataList", "setDefaultDataInTodayDataList() called")
+        if (dataList.size!=STORAGE.LIST_LIMIT){
+            for (i in 0 until STORAGE.LIST_LIMIT){
+                val newItem = ListItem(i+1,"", "", todayDate, 0L, false,
+                    false, 0, false, false)
+                dataList.add(i, newItem)
+            }
+            adapter.notifyDataSetChanged()
+        }
+    }
+
+    private fun showLogTodayList(){
+        Log.d("dataList", "showLogTodayList(): dataList.size = ${dataList.size}")
+        val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+        for(i in 0 until dataList.size){
+            Log.d("dataList", "dataList[${i}] id: ${dataList[i].id} " +
+                    "dataList[${i}] text: ${dataList[i].text} description: ${dataList[i].description} " +
+                    "date: ${dateFormat.format(dataList[i].date)} isVisible: ${dataList[i].isVisible} " +
+                    "isPlaying: ${dataList[i].isPlaying} isStop: ${dataList[i].isStop} " +
+                    "status: ${dataList[i].status} isVisible: ${dataList[i].isVisible} " +
+                    "lastChanged: ${dataList[i].lastChanged}")
+        }
+    }
+
+    private suspend fun setDefaultDataInTableTodayList() {
+        Log.d("todayList", "setDefaultDataInTableTodayList() called, dataList.size = ${dataList.size}")
+        withContext(Dispatchers.IO){
+            if(getSettingValue("DatabaseTodayListAlreadyCreated")==0){
+                val database = DatabaseMain.getDatabase(requireContext())
+                for (i in 0 until dataList.size) {
+                    val item = TodayList(
+                        i + 1,
+                        dataList[i].text,
+                        dataList[i].description,
+                        dataList[i].time,
+                        dataList[i].status,
+                        dataList[i].isPlaying,
+                        dataList[i].isStop,
+                        dataList[i].isVisible,
+                        dataList[i].lastChanged
+                    )
+                    database.getDaoTodayList().insertItem(item)
+                }
+                database.getDaoSetupData().setSettings("DatabaseTodayListAlreadyCreated",1)
+            }
+        }
+    }
+
+    private suspend fun showLogTableTodayList(){
+        Log.d("todayList", "showLogTableTodayList() called, maxID = ${getMaxID()}")
+        withContext(Dispatchers.IO){
+            val database = DatabaseMain.getDatabase(requireContext())
+            val items: List<TodayList> = database.getDaoTodayList().getAllTasks()
+            for (item in items){
+                Log.d("todayList", "task[${item.id}] text: ${item.task} " +
+                        "description: ${item.description} time: ${item.time} " +
+                        "status: ${item.status} isPlaying: ${item.isPlaying} " +
+                        "isStop: ${item.isStop} isVisible: ${item.isVisible} " +
+                        "lastChanged: ${item.lastChanged}")
+            }
+        }
+    }
+
+    private suspend fun getMaxID():Int = withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(requireContext())
+        return@withContext database.getDaoTodayList().getMaxID()
+    }
 
 }
     /*

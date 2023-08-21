@@ -1,6 +1,6 @@
 package com.example.diploma.domain
 
-data class ListItem(var id:Int, var text:String, var description:String, var date:String,
+data class ListItem(var id:Int, var text:String, var description:String, var date:Long,
                     var time:Long, var isPlaying:Boolean, var isStop:Boolean,
                     var status:Int, var isVisible:Boolean, var lastChanged:Boolean)
 

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "0790aa5a906d74568cc01a9472a402c9",
+    "identityHash": "342440be3a42a63fdf2ecd66b66a2cb5",
     "entities": [
       {
         "tableName": "all_tasks_by_all_time",
@@ -127,12 +127,44 @@
         },
         "indices": [],
         "foreignKeys": []
+      },
+      {
+        "tableName": "setup_data",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `setting_name` TEXT NOT NULL, `setting_value` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "setting_name",
+            "columnName": "setting_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "setting_value",
+            "columnName": "setting_value",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
       }
     ],
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0790aa5a906d74568cc01a9472a402c9')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '342440be3a42a63fdf2ecd66b66a2cb5')"
     ]
   }
 }

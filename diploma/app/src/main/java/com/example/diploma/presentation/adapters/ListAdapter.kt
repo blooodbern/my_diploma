@@ -28,25 +28,73 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
 import java.time.Clock
 import java.time.LocalDate
 import java.time.chrono.ChronoLocalDateTime
+import java.util.Locale
 
 
 class ListAdapter(private val data: MutableList<ListItem>, private val context: Context) : RecyclerView.Adapter<ListAdapter.ViewHolder>() {
 
+    private var cnt = 0
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        TODO("Not yet implemented")
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.home_list_model, parent, false)
+        return ViewHolder(view)
     }
 
-    override fun getItemCount(): Int {
-        TODO("Not yet implemented")
-    }
+    override fun getItemCount(): Int = data.size
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        TODO("Not yet implemented")
+        val item = data[position]
+        displayItems(holder, item)
+        showLogTodayListAdapter()
     }
+
+    private fun displayItems(holder: ViewHolder, item: ListItem){
+        if (item.isVisible) {
+            showFrame(holder)
+        }
+        else {
+            hideDescription(holder)
+            hideFrame(holder)
+        }
+    }
+
+    private fun showDescription(holder: ViewHolder){
+        holder.descriptionForm.visibility = VISIBLE
+        holder.descriptionForm.requestFocus()
+    }
+
+    private fun hideDescription(holder: ViewHolder){
+        holder.descriptionForm.visibility = GONE
+    }
+
+    private fun showFrame(holder: ViewHolder){
+        holder.itemFrame.visibility = VISIBLE
+    }
+
+    private fun hideFrame(holder: ViewHolder){
+        holder.itemFrame.visibility = GONE
+    }
+
+    private fun showLogTodayListAdapter(){
+        cnt++
+        if (cnt==STORAGE.LIST_LIMIT){
+            Log.d("dataAdapter", "showLogTodayListAdapter(): data.size = ${data.size}, cnt = ${cnt}")
+            val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+            for(i in 0 until data.size){
+                Log.d("dataList", "dataList[${i}] id: ${data[i].id} " +
+                        "dataList[${i}] text: ${data[i].text} description: ${data[i].description} " +
+                        "date: ${dateFormat.format(data[i].date)} isVisible: ${data[i].isVisible} " +
+                        "isPlaying: ${data[i].isPlaying} isStop: ${data[i].isStop} " +
+                        "status: ${data[i].status} isVisible: ${data[i].isVisible} " +
+                        "lastChanged: ${data[i].lastChanged}")
+            }
+        }
+    }
+
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val etTask: EditText = view.findViewById(R.id.et_task)
