@@ -48,15 +48,28 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = data[position]
+        setTheme(1,holder)
         displayItems(holder, item)
-        showLogTodayListAdapter()
+        showLogTodayListAdapter(false)
+        btnStopClicked(holder, position, item)
+    }
+
+    private fun setTheme(theme: Int, holder: ViewHolder){
+        when(theme){
+            1 -> {
+                holder.butStop.setColorFilter(ContextCompat.getColor(context, R.color.custom21))
+                holder.butPlayPause.setColorFilter(ContextCompat.getColor(context, R.color.custom21))
+                holder.butDescr.setColorFilter(ContextCompat.getColor(context, R.color.custom21))
+            }
+        }
     }
 
     private fun displayItems(holder: ViewHolder, item: ListItem){
-        if (item.isVisible) {
+        if (item.isVisible && !item.isStop) {
             showFrame(holder)
         }
-        else {
+        if (!item.isVisible)
+        {
             hideDescription(holder)
             hideFrame(holder)
         }
@@ -79,14 +92,18 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         holder.itemFrame.visibility = GONE
     }
 
-    private fun showLogTodayListAdapter(){
-        cnt++
-        if (cnt==STORAGE.LIST_LIMIT){
-            Log.d("dataAdapter", "showLogTodayListAdapter(): data.size = ${data.size}, cnt = ${cnt}")
+    private fun showLogTodayListAdapter(show:Boolean){
+        if(!show){
+            cnt++
+            if (cnt==STORAGE.LIST_LIMIT+1) cnt = 0
+        }
+        if (cnt==STORAGE.LIST_LIMIT || show){
+            Log.d("dataAdapter", "showLogTodayListAdapter(): data.size = ${data.size}, " +
+                    "cnt = ${cnt}")
             val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
             for(i in 0 until data.size){
                 Log.d("dataList", "dataList[${i}] id: ${data[i].id} " +
-                        "dataList[${i}] text: ${data[i].text} description: ${data[i].description} " +
+                        "text: ${data[i].text} description: ${data[i].description} " +
                         "date: ${dateFormat.format(data[i].date)} isVisible: ${data[i].isVisible} " +
                         "isPlaying: ${data[i].isPlaying} isStop: ${data[i].isStop} " +
                         "status: ${data[i].status} isVisible: ${data[i].isVisible} " +
@@ -95,6 +112,66 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         }
     }
 
+    private fun btnStopClicked(holder: ViewHolder, position: Int, item: ListItem){
+        holder.butStop.setOnClickListener {
+            CoroutineScope(Dispatchers.Main).launch{
+            if (fieldIsEmpty(holder)){
+                hideDescription(holder)
+                hideFrame(holder)
+                withContext(Dispatchers.IO){
+                    //item.isStop = true
+                    //item.lastChanged = true
+                    item.isVisible = false
+                    if (getAmountOfVisibleItemsNext(position)!=0)reorderVisibleItems(position)
+                }
+                Log.d("btnStop", "btnStopClicked() called, amountOfVisibleItemsNext = ${getAmountOfVisibleItemsNext(position)}")
+            }
+                withContext(Dispatchers.IO){
+                    saveDataInTableTodayList()
+                }
+                showLogTodayListAdapter(true)
+            }
+        }
+    }
+
+    private fun fieldIsEmpty(holder: ViewHolder):Boolean{
+        val task = holder.etTask.text.toString()
+        if(task=="") return true
+        return false
+    }
+
+    private suspend fun saveDataInTableTodayList() {
+        Log.d("todayList", "[Adapter] saveDataInTableTodayList() called, data.size = ${data.size}")
+        withContext(Dispatchers.IO){
+            val database = DatabaseMain.getDatabase(context)
+            for (i in 0 until data.size) {
+                val itemID = i+1
+                database.getDaoTodayList().setItemName(data[i].text, itemID)
+                database.getDaoTodayList().setItemDesc(data[i].description, itemID)
+                database.getDaoTodayList().setItemTime(data[i].time, itemID)
+                database.getDaoTodayList().setItemStatus(data[i].status, itemID)
+                database.getDaoTodayList().setItemIsPlaying(data[i].isPlaying, itemID)
+                database.getDaoTodayList().setItemIsStop(data[i].isStop, itemID)
+                database.getDaoTodayList().setItemIsVisible(data[i].isVisible, itemID)
+                database.getDaoTodayList().setItemLastChanged(data[i].lastChanged, itemID)
+            }
+        }
+    }
+
+    private fun reorderVisibleItems(position: Int){
+        val tempItem = data[position].copy()
+        for (i in position until STORAGE.LIST_LIMIT-1){
+            data[i] = data[i+1]
+            data[i].id = i+1
+        }
+        data[STORAGE.LIST_LIMIT-1] = tempItem
+        data[STORAGE.LIST_LIMIT-1].id = STORAGE.LIST_LIMIT
+    }
+
+    private suspend fun getAmountOfVisibleItemsNext(id:Int):Int = withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(context)
+        return@withContext database.getDaoTodayList().amountOfVisibleItemsAfterItem(id+1)
+    }
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val etTask: EditText = view.findViewById(R.id.et_task)

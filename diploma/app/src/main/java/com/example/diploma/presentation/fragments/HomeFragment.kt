@@ -69,6 +69,7 @@ class HomeFragment : Fragment() {
                 showLogTableTodayList()
             }
         }
+        btnAddClicked()
 
         return binding.root
     }
@@ -146,7 +147,7 @@ class HomeFragment : Fragment() {
             withContext(Dispatchers.Main){
                 for (item in items) {
                     val listID = item.id - 1
-                    dataList[listID].id = listID
+                    dataList[listID].id = item.id
                     dataList[listID].text = item.task
                     dataList[listID].description = item.description
                     dataList[listID].date = todayDate
@@ -189,7 +190,7 @@ class HomeFragment : Fragment() {
         val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
         for(i in 0 until dataList.size){
             Log.d("dataList", "dataList[${i}] id: ${dataList[i].id} " +
-                    "dataList[${i}] text: ${dataList[i].text} description: ${dataList[i].description} " +
+                    "text: ${dataList[i].text} description: ${dataList[i].description} " +
                     "date: ${dateFormat.format(dataList[i].date)} isVisible: ${dataList[i].isVisible} " +
                     "isPlaying: ${dataList[i].isPlaying} isStop: ${dataList[i].isStop} " +
                     "status: ${dataList[i].status} isVisible: ${dataList[i].isVisible} " +
@@ -239,6 +240,74 @@ class HomeFragment : Fragment() {
     private suspend fun getMaxID():Int = withContext(Dispatchers.IO){
         val database = DatabaseMain.getDatabase(requireContext())
         return@withContext database.getDaoTodayList().getMaxID()
+    }
+
+    private fun btnAddClicked(){
+        binding.btnAddItem.setOnClickListener {
+            CoroutineScope(Dispatchers.Main).launch{
+                withContext(Dispatchers.IO) {
+                    Log.d("btnAdd", "btnAddClicked() called, fillTodayList() called")
+                    fillTodayList()
+                }
+                Log.d("btnAdd", "btnAddClicked() called, checkLimit() = ${checkLimit()}")
+                if(checkLimit()>0) showNewItem()
+                else Toast.makeText(requireContext(), getString(R.string.limit_msg), Toast.LENGTH_SHORT).show()
+                showLogTableTodayList()
+            }
+
+        }
+    }
+
+    private suspend fun checkLimit():Int =  withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(requireContext())
+        return@withContext database.getDaoTodayList().checkInvisibleItems()
+    }
+
+    private suspend fun showNewItem(){
+        val id = getMinInvisID()-1
+        dataList[id].isVisible = true
+        adapter.notifyItemChanged(id)
+        binding.recyclerView.scrollToPosition(id)
+        saveDataInTableTodayList()
+        Log.d("btnAdd", "showNewItem() called, dataList[${id}].isVisible = ${dataList[id].isVisible}")
+    }
+
+    private suspend fun getMinInvisID():Int = withContext(Dispatchers.IO){
+        val database = DatabaseMain.getDatabase(requireContext())
+        return@withContext database.getDaoTodayList().getMinInvisibleID()
+    }
+
+    private suspend fun saveDataInTableTodayList() {
+        Log.d("todayList", "[Fragment] saveDataInTableTodayList() called, data.size = ${dataList.size}")
+        withContext(Dispatchers.IO){
+            val database = DatabaseMain.getDatabase(requireContext())
+            for (i in 0 until dataList.size) {
+                val itemID = i+1
+                database.getDaoTodayList().setItemName(dataList[i].text, itemID)
+                database.getDaoTodayList().setItemDesc(dataList[i].description, itemID)
+                database.getDaoTodayList().setItemTime(dataList[i].time, itemID)
+                database.getDaoTodayList().setItemStatus(dataList[i].status, itemID)
+                database.getDaoTodayList().setItemIsPlaying(dataList[i].isPlaying, itemID)
+                database.getDaoTodayList().setItemIsStop(dataList[i].isStop, itemID)
+                database.getDaoTodayList().setItemIsVisible(dataList[i].isVisible, itemID)
+                database.getDaoTodayList().setItemLastChanged(dataList[i].lastChanged, itemID)
+            }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        CoroutineScope(Dispatchers.IO).launch{
+            saveDataInTableTodayList()
+        }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        CoroutineScope(Dispatchers.IO).launch{
+            saveDataInTableTodayList()
+        }
+        _binding = null
     }
 
 }

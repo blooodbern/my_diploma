@@ -27,5 +27,7 @@
     <string name="task_partly">partly completed</string>
     <string name="task_success">finished successfully</string>
 
+    <string name="limit_msg">limit for the day has been reached</string>
+
 
 </resources>

@@ -22,4 +22,6 @@
     <string name="task_partly">завершено частково</string>
     <string name="task_success">успішно виконано</string>
     <string name="task_notStarted">не розпочато</string>
+
+    <string name="limit_msg">кількість завдань на день обмежена</string>
 </resources>
