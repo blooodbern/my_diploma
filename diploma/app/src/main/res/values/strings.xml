@@ -20,6 +20,10 @@
     <string name="alertDialog_partly">Partially</string>
     <string name="alertDialog_success">Success</string>
 
+    <string name="confirm_delete">Delete?</string>
+    <string name="confirm_yes">yes</string>
+    <string name="confirm_no">no</string>
+
 
     <string name="task_notStarted">not started</string>
     <string name="task_inProcess">in process</string>

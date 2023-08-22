@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/alertDialog_clc5"
+        android:padding="5dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/buttonCancel"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:scaleType="centerCrop"
+                android:backgroundTint="@color/noColor"
+                app:srcCompat="@drawable/ic_arrow_back_48" />
+
+            <ImageView
+                android:id="@+id/empty_space"
+                android:layout_width="160dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                app:srcCompat="@drawable/empty_divider_48" />
+
+            <ImageButton
+                android:id="@+id/buttonDelete"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:scaleType="centerCrop"
+                android:backgroundTint="@color/noColor"
+                app:srcCompat="@drawable/ic_delete_48" />
+
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/empty_divider"
+            android:layout_width="match_parent"
+            android:layout_height="5dp"
+            android:layout_weight="1"
+            app:srcCompat="@drawable/empty_divider_48" />
+
+        <Button
+            android:id="@+id/buttonUnsatisfactory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="15dp"
+            android:layout_marginRight="15dp"
+            android:backgroundTint="@color/alertDialog_clc6"
+            android:text="@string/alertDialog_unsatis" />
+
+        <Button
+            android:id="@+id/buttonPartially"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="15dp"
+            android:layout_marginRight="15dp"
+            android:backgroundTint="@color/alertDialog_clc6"
+            android:text="@string/alertDialog_partly" />
+
+        <Button
+            android:id="@+id/buttonSuccess"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="15dp"
+            android:layout_marginRight="15dp"
+            android:backgroundTint="@color/alertDialog_clc6"
+            android:text="@string/alertDialog_success" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

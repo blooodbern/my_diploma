@@ -24,4 +24,7 @@
     <string name="task_notStarted">не розпочато</string>
 
     <string name="limit_msg">кількість завдань на день обмежена</string>
+    <string name="confirm_delete">Видалити?</string>
+    <string name="confirm_yes">так</string>
+    <string name="confirm_no">ні</string>
 </resources>
