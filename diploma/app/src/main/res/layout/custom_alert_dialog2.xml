@@ -1,18 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="240dp"
+        android:scaleType="centerCrop"
+        android:layout_gravity="center"
+        app:srcCompat="@drawable/alert_bcg1" />
+
     <LinearLayout
+        android:layout_gravity="center"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="@color/alertDialog_clc5"
-        android:padding="5dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:background="@color/noColor"
+        android:padding="5dp">
+
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -29,9 +35,8 @@
 
             <ImageView
                 android:id="@+id/empty_space"
-                android:layout_width="160dp"
+                android:layout_width="200dp"
                 android:layout_height="match_parent"
-                android:layout_weight="1"
                 app:srcCompat="@drawable/empty_divider_48" />
 
             <ImageButton
@@ -45,10 +50,9 @@
         </LinearLayout>
 
         <ImageView
-            android:id="@+id/empty_divider"
+            android:id="@+id/empty_divider2"
             android:layout_width="match_parent"
-            android:layout_height="5dp"
-            android:layout_weight="1"
+            android:layout_height="15dp"
             app:srcCompat="@drawable/empty_divider_48" />
 
         <Button
@@ -57,6 +61,8 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="15dp"
             android:layout_marginRight="15dp"
+            android:textSize="18sp"
+            android:textColor="@color/alertDialog_clc10"
             android:backgroundTint="@color/alertDialog_clc6"
             android:text="@string/alertDialog_unsatis" />
 
@@ -66,6 +72,8 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="15dp"
             android:layout_marginRight="15dp"
+            android:textSize="18sp"
+            android:textColor="@color/alertDialog_clc10"
             android:backgroundTint="@color/alertDialog_clc6"
             android:text="@string/alertDialog_partly" />
 
@@ -75,9 +83,11 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="15dp"
             android:layout_marginRight="15dp"
+            android:textSize="18sp"
+            android:textColor="@color/alertDialog_clc10"
             android:backgroundTint="@color/alertDialog_clc6"
             android:text="@string/alertDialog_success" />
 
     </LinearLayout>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</FrameLayout>

@@ -11,6 +11,8 @@ import android.view.View
 import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -43,6 +45,9 @@ class HomeFragment : Fragment() {
     private val dataListFT = mutableListOf<ListItem>()
 
     private var todayDate:Long = 0L
+
+    private val handler = Handler(Looper.getMainLooper())
+    private val pollingIntervalMillis: Long = 500
 
     private var _binding: ListHomeBinding? = null
     private val binding get() = _binding!!
@@ -295,11 +300,17 @@ class HomeFragment : Fragment() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        startPolling()
+    }
+
     override fun onPause() {
         super.onPause()
         CoroutineScope(Dispatchers.IO).launch{
             saveDataInTableTodayList()
         }
+        stopPolling()
     }
 
     override fun onDestroyView() {
@@ -308,6 +319,93 @@ class HomeFragment : Fragment() {
             saveDataInTableTodayList()
         }
         _binding = null
+        stopPolling()
+    }
+
+    private fun startPolling() {
+        handler.post(pollRunnable)
+    }
+
+    private fun stopPolling() {
+        handler.removeCallbacks(pollRunnable)
+    }
+
+    private val pollRunnable = object : Runnable {
+        override fun run() {
+
+            checkConfirmDialog()
+            handler.postDelayed(this, pollingIntervalMillis)
+        }
+    }
+
+    private fun checkConfirmDialog(){
+        if(STORAGE.IsPressed) {
+            showConfirmDialog()
+            STORAGE.IsPressed = false
+        }
+    }
+
+    private fun showConfirmDialog(){
+
+        val alertDialogView = LayoutInflater.from(requireContext()).inflate(R.layout.custom_alert_dialog2, null)
+
+        val alertDialogBuilder = AlertDialog.Builder(requireContext())
+        alertDialogBuilder.setView(alertDialogView)
+        val alertDialog = alertDialogBuilder.create()
+        alertDialog.setCanceledOnTouchOutside(false)
+
+        val deleteButton = alertDialogView.findViewById<ImageButton>(R.id.buttonDelete)
+        val cancelButton = alertDialogView.findViewById<ImageButton>(R.id.buttonCancel)
+        val unsatisButton = alertDialogView.findViewById<Button>(R.id.buttonUnsatisfactory)
+        val partlyButton = alertDialogView.findViewById<Button>(R.id.buttonPartially)
+        val successButton = alertDialogView.findViewById<Button>(R.id.buttonSuccess)
+
+
+        deleteButton.setOnClickListener {
+            deleteConfirmDialog()
+            alertDialog.dismiss()
+        }
+
+        cancelButton.setOnClickListener {
+            alertDialog.dismiss()
+        }
+
+        unsatisButton.setOnClickListener {
+            alertDialog.dismiss()
+        }
+
+        partlyButton.setOnClickListener {
+            alertDialog.dismiss()
+        }
+
+        successButton.setOnClickListener {
+            alertDialog.dismiss()
+        }
+
+        alertDialog.show()
+    }
+
+    private fun deleteConfirmDialog(){
+        val alertDialogView = LayoutInflater.from(requireContext()).inflate(R.layout.delete_confirm_dialog, null)
+
+        val alertDialogBuilder = AlertDialog.Builder(requireContext())
+        alertDialogBuilder.setView(alertDialogView)
+        val alertDialog = alertDialogBuilder.create()
+        alertDialog.setCanceledOnTouchOutside(false)
+
+        val yesButton = alertDialogView.findViewById<Button>(R.id.buttonYes)
+        val noButton = alertDialogView.findViewById<Button>(R.id.buttonNo)
+
+        noButton.setOnClickListener {
+            showConfirmDialog()
+            alertDialog.dismiss()
+        }
+
+        yesButton.setOnClickListener {
+            alertDialog.dismiss()
+        }
+
+        alertDialog.show()
     }
 
 }

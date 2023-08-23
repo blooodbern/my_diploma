@@ -48,10 +48,10 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = data[position]
-        setTheme(1,holder)
-        displayItems(holder, item)
-        showLogTodayListAdapter(false)
-        btnStopClicked(holder, position, item)
+            setTheme(1,holder)
+            displayItems(holder, item)
+            showLogTodayListAdapter(false)
+            btnStopClicked(holder, position, item)
     }
 
     private fun setTheme(theme: Int, holder: ViewHolder){
@@ -67,6 +67,7 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
     private fun displayItems(holder: ViewHolder, item: ListItem){
         if (item.isVisible && !item.isStop) {
             showFrame(holder)
+            holder.etTask.requestFocus()
         }
         if (!item.isVisible)
         {
@@ -94,6 +95,8 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
 
     private fun showLogTodayListAdapter(show:Boolean){
         if(!show){
+            Log.d("dataAdapter", "showLogTodayListAdapter(): data.size = ${data.size}, " +
+                    "cnt = ${cnt}, show = ${show}")
             cnt++
             if (cnt==STORAGE.LIST_LIMIT+1) cnt = 0
         }
@@ -115,17 +118,20 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
     private fun btnStopClicked(holder: ViewHolder, position: Int, item: ListItem){
         holder.butStop.setOnClickListener {
             CoroutineScope(Dispatchers.Main).launch{
-            if (fieldIsEmpty(holder)){
-                hideDescription(holder)
-                hideFrame(holder)
-                withContext(Dispatchers.IO){
-                    //item.isStop = true
-                    //item.lastChanged = true
-                    item.isVisible = false
-                    if (getAmountOfVisibleItemsNext(position)!=0)reorderVisibleItems(position)
+                if (fieldIsEmpty(holder)){
+                    hideDescription(holder)
+                    hideFrame(holder)
+                    withContext(Dispatchers.IO){
+                        //item.isStop = true
+                        //item.lastChanged = true
+                        item.isVisible = false
+                        if (getAmountOfVisibleItemsNext(position)!=0)reorderVisibleItems(position)
+                    }
+                    Log.d("btnStop", "btnStopClicked() called, amountOfVisibleItemsNext = ${getAmountOfVisibleItemsNext(position)}")
                 }
-                Log.d("btnStop", "btnStopClicked() called, amountOfVisibleItemsNext = ${getAmountOfVisibleItemsNext(position)}")
-            }
+                else {
+                    STORAGE.IsPressed = true
+                }
                 withContext(Dispatchers.IO){
                     saveDataInTableTodayList()
                 }
