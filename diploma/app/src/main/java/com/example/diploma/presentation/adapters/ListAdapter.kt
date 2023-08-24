@@ -1,43 +1,130 @@
 package com.example.diploma.presentation.adapters
 
 import android.content.Context
-import android.os.Build
-import android.os.SystemClock
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
-import android.view.View.GONE
-import android.view.View.VISIBLE
 import android.view.ViewGroup
 import android.widget.Chronometer
 import android.widget.EditText
 import android.widget.ImageButton
-import androidx.annotation.RequiresApi
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
+import com.example.diploma.data.LIST
 import com.example.diploma.R
 import com.example.diploma.domain.ListItem
 import com.example.diploma.data.STORAGE
-import com.example.diploma.data.database.DatabaseMain
-import com.example.diploma.data.tables.AllTasksByAllTime
-import com.example.diploma.data.tables.TodayList
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.text.SimpleDateFormat
-import java.time.Clock
-import java.time.LocalDate
-import java.time.chrono.ChronoLocalDateTime
-import java.util.Locale
+import kotlin.math.log
+
+class ListAdapter(private val context: Context) : RecyclerView.Adapter<ListAdapter.ViewHolder>() {
 
 
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val view =
+            LayoutInflater.from(parent.context).inflate(R.layout.home_list_model, parent, false)
+        return ViewHolder(view)
+    }
+
+    override fun getItemCount(): Int = LIST.data.size
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val item = LIST.data[position]
+        setTheme(1, holder)
+        setItemInfo(holder, position, item)
+        onBtnStopClicked(holder,position, item)
+        saveUserText(holder, item)
+    }
+
+    private fun setTheme(theme: Int, holder: ViewHolder){
+        when(theme){
+            1 -> {
+                holder.butStop.setColorFilter(ContextCompat.getColor(context, R.color.custom21))
+                holder.butPlayPause.setColorFilter(ContextCompat.getColor(context, R.color.custom21))
+                holder.butDescr.setColorFilter(ContextCompat.getColor(context, R.color.custom21))
+            }
+        }
+    }
+
+    private fun setItemInfo(holder: ViewHolder, position: Int, item: ListItem){
+        holder.etTask.id = item.id
+        holder.etTask.setText(item.text)
+        holder.etDescription.id = item.id
+        holder.etDescription.setText(item.description)
+
+        if (position==LIST.data.size-1) holder.etTask.requestFocus()
+    }
+
+    private fun onBtnStopClicked(holder: ViewHolder, position: Int, item: ListItem){
+        holder.butStop.setOnClickListener {
+            if (fieldIsEmpty(holder)){
+                LIST.data.remove(item)
+                notifyItemRemoved(position)
+            }
+            else {
+                STORAGE.IsPressed = true
+                STORAGE.deletedItemPosition = position
+                STORAGE.deletedItemID = item.id
+            }
+        }
+    }
+
+    private fun fieldIsEmpty(holder: ViewHolder):Boolean{
+        val task = holder.etTask.text.toString()
+        if(task=="") return true
+        return false
+    }
+
+    private fun saveUserText(holder: ViewHolder, item: ListItem){
+        holder.etTask.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if (item.id == holder.etTask.id)
+                    item.text = holder.etTask.text.toString()
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+            }
+        })
+
+        holder.etDescription.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if(item.descriptionOpen && item.id == holder.etDescription.id)
+                    item.description = holder.etDescription.text.toString()
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+            }
+        })
+    }
+
+    inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val etTask: EditText = view.findViewById(R.id.et_task)
+        val butDescr: ImageButton = view.findViewById(R.id.ib_descr)
+        val etDescription: EditText = view.findViewById(R.id.et_description)
+        val descriptionForm: CardView = view.findViewById(R.id.cv_description)
+        val chronometer: Chronometer = view.findViewById(R.id.chronometer)
+        val butStop: ImageButton = view.findViewById(R.id.ib_stop)
+        val butPlayPause: ImageButton = view.findViewById(R.id.ib_play_pause)
+        val itemFrame: CardView = view.findViewById(R.id.finished_task)
+    }
+}
+
+/*
 class ListAdapter(private val data: MutableList<ListItem>, private val context: Context) : RecyclerView.Adapter<ListAdapter.ViewHolder>() {
 
     private var cnt = 0
+    private var cntSaveData = 0
+
+    private val handler = Handler(Looper.getMainLooper())
+    private val pollingIntervalMillis: Long = 3000
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.home_list_model, parent, false)
@@ -48,10 +135,13 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = data[position]
-            setTheme(1,holder)
-            displayItems(holder, item)
-            showLogTodayListAdapter(false)
-            btnStopClicked(holder, position, item)
+        setTheme(1,holder)
+        displayItems(holder, item)
+        editDescription(holder, item)
+        showLogTodayListAdapter(false)
+        btnStopClicked(holder, position, item)
+        saveUserTask(holder, item)
+        saveUserDescription(holder, item)
     }
 
     private fun setTheme(theme: Int, holder: ViewHolder){
@@ -68,12 +158,18 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         if (item.isVisible && !item.isStop) {
             showFrame(holder)
             holder.etTask.requestFocus()
+            setItemInfo(holder, item)
         }
         if (!item.isVisible)
         {
             hideDescription(holder)
             hideFrame(holder)
         }
+    }
+
+    private fun setItemInfo(holder: ViewHolder, item: ListItem){
+        holder.etTask.setText(item.text)
+        holder.etDescription.setText(item.description)
     }
 
     private fun showDescription(holder: ViewHolder){
@@ -125,9 +221,10 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
                         //item.isStop = true
                         //item.lastChanged = true
                         item.isVisible = false
-                        if (getAmountOfVisibleItemsNext(position)!=0)reorderVisibleItems(position)
+                        //if (getAmountOfVisibleItemsNext(position)!=0)reorderVisibleItems(position)
                     }
-                    Log.d("btnStop", "btnStopClicked() called, amountOfVisibleItemsNext = ${getAmountOfVisibleItemsNext(position)}")
+                    Log.d("btnStop", "btnStopClicked() called, " +
+                            "amountOfVisibleItemsNext = ${getAmountOfVisibleItemsNext(position)}")
                 }
                 else {
                     STORAGE.IsPressed = true
@@ -147,21 +244,29 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
     }
 
     private suspend fun saveDataInTableTodayList() {
-        Log.d("todayList", "[Adapter] saveDataInTableTodayList() called, data.size = ${data.size}")
-        withContext(Dispatchers.IO){
-            val database = DatabaseMain.getDatabase(context)
-            for (i in 0 until data.size) {
-                val itemID = i+1
-                database.getDaoTodayList().setItemName(data[i].text, itemID)
-                database.getDaoTodayList().setItemDesc(data[i].description, itemID)
-                database.getDaoTodayList().setItemTime(data[i].time, itemID)
-                database.getDaoTodayList().setItemStatus(data[i].status, itemID)
-                database.getDaoTodayList().setItemIsPlaying(data[i].isPlaying, itemID)
-                database.getDaoTodayList().setItemIsStop(data[i].isStop, itemID)
-                database.getDaoTodayList().setItemIsVisible(data[i].isVisible, itemID)
-                database.getDaoTodayList().setItemLastChanged(data[i].lastChanged, itemID)
+        cntSaveData++
+        when(cntSaveData){
+            STORAGE.LIST_LIMIT->{
+                cntSaveData = 0
+                Log.d("todayList", "[Adapter] saveDataInTableTodayList() called, " +
+                        "data.size = ${data.size}, cntSaveData = ${cntSaveData}")
+                withContext(Dispatchers.IO){
+                    val database = DatabaseMain.getDatabase(context)
+                    for (i in 0 until data.size) {
+                        val itemID = i+1
+                        database.getDaoTodayList().setItemName(data[i].text, itemID)
+                        database.getDaoTodayList().setItemDesc(data[i].description, itemID)
+                        database.getDaoTodayList().setItemTime(data[i].time, itemID)
+                        database.getDaoTodayList().setItemStatus(data[i].status, itemID)
+                        database.getDaoTodayList().setItemIsPlaying(data[i].isPlaying, itemID)
+                        database.getDaoTodayList().setItemIsStop(data[i].isStop, itemID)
+                        database.getDaoTodayList().setItemIsVisible(data[i].isVisible, itemID)
+                        database.getDaoTodayList().setItemLastChanged(data[i].lastChanged, itemID)
+                    }
+                }
             }
         }
+
     }
 
     private fun reorderVisibleItems(position: Int){
@@ -179,6 +284,68 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         return@withContext database.getDaoTodayList().amountOfVisibleItemsAfterItem(id+1)
     }
 
+    private fun saveUserTask(holder: ViewHolder, item: ListItem){
+        holder.etTask.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                item.text = holder.etTask.text.toString()
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+            }
+        })
+    }
+
+    private fun saveUserDescription(holder: ViewHolder, item: ListItem){
+        holder.etDescription.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if(item.descriptionOpen) item.description = holder.etDescription.text.toString()
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+            }
+        })
+    }
+
+    private val pollRunnable = object : Runnable {
+        override fun run() {
+            CoroutineScope(Dispatchers.IO).launch{
+                saveDataInTableTodayList()
+            }
+            handler.postDelayed(this, pollingIntervalMillis)
+        }
+    }
+
+    fun startDataSaveTimer() {
+        handler.postDelayed(pollRunnable, pollingIntervalMillis)
+    }
+
+    fun stopDataSaveTimer() {
+        handler.removeCallbacks(pollRunnable)
+    }
+
+    private fun editDescription(holder: ViewHolder, item: ListItem){
+        holder.butDescr.setOnClickListener {
+            item.descriptionOpen = !item.descriptionOpen
+            changeDescButt(holder, item)
+        }
+    }
+
+    private fun changeDescButt(holder: ViewHolder, item: ListItem){
+        if (item.descriptionOpen) {
+            holder.butDescr.setImageResource(R.drawable.ic_show_less_36)
+            showDescription(holder)
+        } else {
+            holder.butDescr.setImageResource(R.drawable.ic_show_more_36)
+            hideDescription(holder)
+        }
+    }
+
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val etTask: EditText = view.findViewById(R.id.et_task)
         val butDescr: ImageButton = view.findViewById(R.id.ib_descr)
@@ -190,6 +357,12 @@ class ListAdapter(private val data: MutableList<ListItem>, private val context: 
         val itemFrame: CardView = view.findViewById(R.id.finished_task)
     }
 }
+
+ */
+
+// -----------------------------------------------------------------------------------------------
+
+
 /*
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.home_list_model, parent, false)

@@ -6,6 +6,10 @@ import kotlin.properties.Delegates
 
 class STORAGE {
     companion object{
+        var deletedItemPosition =  0
+        var deletedItemID =  0
+        var id_cnt = 1
+
         var IsPressed = false
         var DatabaseTodayListAlreadyCreated = false
         var TodayListAlreadyCreated = false

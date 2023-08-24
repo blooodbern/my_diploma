@@ -4,38 +4,378 @@ import android.app.AlertDialog
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.service.voice.VoiceInteractionSession.VisibleActivityCallback
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
-import android.view.View.GONE
-import android.view.View.VISIBLE
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageButton
-import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.diploma.data.LIST
 import com.example.diploma.R
-import com.example.diploma.data.SETTINGS
 import com.example.diploma.databinding.ListHomeBinding
 import com.example.diploma.presentation.adapters.ListAdapter
 import com.example.diploma.presentation.adapters.ListFtAdapter
 import com.example.diploma.domain.ListItem
 import com.example.diploma.data.STORAGE
 import com.example.diploma.data.database.DatabaseMain
-import com.example.diploma.data.tables.AllTasksByAllTime
-import com.example.diploma.data.tables.SetupData
 import com.example.diploma.data.tables.TodayList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlin.reflect.KProperty
+
+
+class HomeFragment : Fragment(){
+
+    private lateinit var adapter: ListAdapter
+    private lateinit var adapterFT: ListFtAdapter
+    //private val dataList = mutableListOf<ListItem>()
+    private val dataListFT = mutableListOf<ListItem>()
+
+    private var todayDate:Long = 0L
+
+
+    private val fragmentScopeMain = CoroutineScope(Dispatchers.Main)
+    private val fragmentScopeIO = CoroutineScope(Dispatchers.IO)
+
+    private val handler = Handler(Looper.getMainLooper())
+    private val confDialogIntervalMillis: Long = 500
+    private val dataSaveIntervalMillis: Long = 2000
+
+    private var _binding: ListHomeBinding? = null
+    private val binding get() = _binding!!
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = ListHomeBinding.inflate(inflater, container, false)
+
+        startPolling()
+
+        setCurDate()
+        initAdapters()
+        fillTodayList()
+        onBtnAddClicked()
+
+        return binding.root
+    }
+
+    override fun onResume() {
+        super.onResume()
+        startPolling()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        stopPolling()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+        stopPolling()
+        fragmentScopeMain.cancel()
+        fragmentScopeIO.cancel()
+    }
+
+    private fun setCurDate(){
+        val currentDate = Calendar.getInstance().time
+        todayDate = currentDate.time
+        val dateFormat = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+        var formattedDate = dateFormat.format(currentDate)
+        binding.curDate.text = formattedDate
+    }
+
+    private fun initAdapters(){
+        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        adapter = ListAdapter(requireContext())
+        binding.recyclerView.adapter = adapter
+
+        binding.recyclerViewFT.layoutManager = LinearLayoutManager(requireContext())
+        adapterFT = ListFtAdapter(dataListFT, requireContext())
+        binding.recyclerViewFT.adapter = adapterFT
+    }
+
+    private fun onBtnAddClicked(){
+        binding.btnAddItem.setOnClickListener {
+            if((LIST.data.size+LIST.dataFT.size)<STORAGE.LIST_LIMIT){
+                val item = ListItem(STORAGE.id_cnt,"","",todayDate,0L,false,
+                false,0,false)
+                STORAGE.id_cnt++
+                LIST.data.add(item)
+                adapter.notifyDataSetChanged()
+            }
+            else {
+                Toast.makeText(requireContext(), getString(R.string.limit_msg),
+                    Toast.LENGTH_SHORT).show()
+            }
+
+            showLogTodayList("onBtnAddClicked")
+            showLogDBTodayList("onBtnAddClicked")
+        }
+    }
+
+    private fun startPolling() {
+        handler.post(pollConfirmDialog)
+        handler.post(pollDataSave)
+    }
+
+    private fun stopPolling() {
+        handler.removeCallbacks(pollConfirmDialog)
+        handler.removeCallbacks(pollDataSave)
+    }
+
+    private val pollConfirmDialog = object : Runnable {
+        override fun run() {
+            checkConfirmDialog()
+            handler.postDelayed(this, confDialogIntervalMillis)
+        }
+    }
+
+    private fun checkConfirmDialog(){
+        if(STORAGE.IsPressed) {
+            showConfirmDialog()
+            STORAGE.IsPressed = false
+        }
+    }
+
+    private val pollDataSave = object : Runnable {
+        override fun run() {
+            saveDataToDB()
+            handler.postDelayed(this, dataSaveIntervalMillis)
+        }
+    }
+
+    private fun showConfirmDialog(){
+
+        val alertDialogView = LayoutInflater.from(requireContext()).inflate(R.layout.custom_alert_dialog2, null)
+
+        val alertDialogBuilder = AlertDialog.Builder(requireContext())
+        alertDialogBuilder.setView(alertDialogView)
+        val alertDialog = alertDialogBuilder.create()
+        alertDialog.setCanceledOnTouchOutside(false)
+
+        val deleteButton = alertDialogView.findViewById<ImageButton>(R.id.buttonDelete)
+        val cancelButton = alertDialogView.findViewById<ImageButton>(R.id.buttonCancel)
+        val unsatisButton = alertDialogView.findViewById<Button>(R.id.buttonUnsatisfactory)
+        val partlyButton = alertDialogView.findViewById<Button>(R.id.buttonPartially)
+        val successButton = alertDialogView.findViewById<Button>(R.id.buttonSuccess)
+
+
+        deleteButton.setOnClickListener {
+            deleteConfirmDialog()
+            alertDialog.dismiss()
+        }
+
+        cancelButton.setOnClickListener {
+            alertDialog.dismiss()
+        }
+
+        unsatisButton.setOnClickListener {
+            alertDialog.dismiss()
+        }
+
+        partlyButton.setOnClickListener {
+            alertDialog.dismiss()
+        }
+
+        successButton.setOnClickListener {
+            alertDialog.dismiss()
+        }
+
+        alertDialog.show()
+    }
+
+    private fun deleteConfirmDialog(){
+        val alertDialogView = LayoutInflater.from(requireContext()).inflate(R.layout.delete_confirm_dialog, null)
+
+        val alertDialogBuilder = AlertDialog.Builder(requireContext())
+        alertDialogBuilder.setView(alertDialogView)
+        val alertDialog = alertDialogBuilder.create()
+        alertDialog.setCanceledOnTouchOutside(false)
+
+        val yesButton = alertDialogView.findViewById<Button>(R.id.buttonYes)
+        val noButton = alertDialogView.findViewById<Button>(R.id.buttonNo)
+
+        noButton.setOnClickListener {
+            showConfirmDialog()
+            alertDialog.dismiss()
+        }
+
+        yesButton.setOnClickListener {
+            saveDataToDB()
+            LIST.data.removeAt(STORAGE.deletedItemPosition)
+            adapter.notifyItemRemoved(STORAGE.deletedItemPosition)
+            deleteItemFromDB()
+            alertDialog.dismiss()
+        }
+
+        alertDialog.show()
+    }
+
+    private fun deleteItemFromDB(){
+        fragmentScopeIO.launch {
+            var database: DatabaseMain? = null
+            try {
+                database = DatabaseMain.getDatabase(requireContext())
+                val dao = database.getDaoTodayList()
+                val itemCount = dao.getItemCnt(STORAGE.deletedItemID)
+                if (itemCount==1){
+                    dao.deleteItem(STORAGE.deletedItemID)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                database?.close()
+            }
+        }
+    }
+
+    private fun saveDataToDB(){
+        if ((LIST.data.size+LIST.dataFT.size) > 0){
+            fragmentScopeIO.launch {
+                var database: DatabaseMain? = null
+                try {
+                    database = DatabaseMain.getDatabase(requireContext())
+                    val dao = database.getDaoTodayList()
+                    for (i in 0 until LIST.data.size){
+                        if (LIST.data[i].text!=""){
+                            val itemByIDCount = dao.getItemCnt(LIST.data[i].id)
+                            val itemByTextCount = dao.getItemByTask(LIST.data[i].text)
+                            val item = TodayList(
+                                LIST.data[i].id,
+                                LIST.data[i].text,
+                                LIST.data[i].description,
+                                LIST.data[i].time,
+                                LIST.data[i].status,
+                                LIST.data[i].isPlaying,
+                                LIST.data[i].isStop
+                            )
+                            if (itemByIDCount==1){
+                                dao.replaceItem(item)
+                            }
+                            else if (itemByTextCount==0) {
+                                dao.insertItem(item)
+                            }
+
+                        }
+                    }
+                    for (i in 0 until LIST.dataFT.size){
+                        if (LIST.dataFT[i].text!=""){
+                            val itemFT = TodayList(
+                                LIST.dataFT[i].id,
+                                LIST.dataFT[i].text,
+                                LIST.dataFT[i].description,
+                                LIST.dataFT[i].time,
+                                LIST.dataFT[i].status,
+                                LIST.dataFT[i].isPlaying,
+                                LIST.dataFT[i].isStop
+                            )
+                            dao.insertItem(itemFT)
+                        }
+                    }
+
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally {
+                    database?.close()
+                }
+            }
+        }
+    }
+
+    private fun fillTodayList(){
+        fragmentScopeMain.launch{
+            var database: DatabaseMain? = null
+            try {
+                database = DatabaseMain.getDatabase(requireContext())
+                val dao = database.getDaoTodayList()
+                var dbItemsCount = 0
+                withContext(Dispatchers.IO){
+                    dbItemsCount = dao.amountOfItems()
+                    if (dbItemsCount!=0){
+                        LIST.data.clear()
+                        val items = dao.getAllItems()
+                        for (item in items){
+                            val listItem = ListItem(
+                                item.id,
+                                item.task,
+                                item.description,
+                                todayDate,
+                                item.time,
+                                item.isPlaying,
+                                item.isStop,
+                                item.status,
+                                false
+                            )
+                            LIST.data.add(listItem)
+                        }
+                    }
+                }
+                if (dbItemsCount!=0)adapter.notifyDataSetChanged()
+
+                STORAGE.id_cnt = dbItemsCount + 1
+
+
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                database?.close()
+            }
+        }
+
+    }
+
+    private fun showLogDBTodayList(calledFrom:String){
+        fragmentScopeIO.launch {
+            Log.d("showDataDB", "[${calledFrom}] showLogDBTodayList")
+            var database: DatabaseMain? = null
+            try {
+                database = DatabaseMain.getDatabase(requireContext())
+                val dao = database.getDaoTodayList()
+                val items = dao.getAllItems()
+                var i = 0
+                for (item in items){
+                    i++
+                    Log.d("showDataDB", "[${i}] id: ${item.id} text: ${item.task} " +
+                            "description: ${item.description} " +
+                            "status: ${item.status} " +
+                            "isPlaying: ${item.isPlaying} " +
+                            "isStop: ${item.isStop}")
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                database?.close()
+            }
+        }
+    }
+    private fun showLogTodayList(calledFrom:String){
+        Log.d("showDataList", "[${calledFrom}] showLogTodayList")
+        for (i in 0 until LIST.data.size){
+            Log.d("showDataList", "[${i}] id: ${LIST.data[i].id} text: ${LIST.data[i].text} " +
+                    "description: ${LIST.data[i].description} " +
+                    "status: ${LIST.data[i].status} " +
+                    "isPlaying: ${LIST.data[i].isPlaying} " +
+                    "isStop: ${LIST.data[i].isStop}")
+        }
+    }
+}
+
+
+
+/*
 
 class HomeFragment : Fragment() {
 
@@ -75,6 +415,7 @@ class HomeFragment : Fragment() {
             }
         }
         btnAddClicked()
+        adapter.startDataSaveTimer()
 
         return binding.root
     }
@@ -113,6 +454,7 @@ class HomeFragment : Fragment() {
                     )
                     database.getDaoSetupData().insertSettings(setting)
                 }
+
             }
         }
     }
@@ -137,6 +479,7 @@ class HomeFragment : Fragment() {
             val database = DatabaseMain.getDatabase(requireContext())
             withContext(Dispatchers.IO){
                 database.getDaoSetupData().setSettings("ListTodayListAlreadyCreated",1)
+
             }
         }
         else {
@@ -149,11 +492,12 @@ class HomeFragment : Fragment() {
         withContext(Dispatchers.IO) {
             val database = DatabaseMain.getDatabase(requireContext())
             val items: List<TodayList> = database.getDaoTodayList().getAllTasks()
+            //var id = 0
             withContext(Dispatchers.Main){
                 for (item in items) {
                     val listID = item.id - 1
-                    dataList[listID].id = item.id
-                    dataList[listID].text = item.task
+                   // dataList[listID].id = item.id // X
+                    dataList[listID].text = item.task //dataList[id]
                     dataList[listID].description = item.description
                     dataList[listID].date = todayDate
                     dataList[listID].time = item.time
@@ -163,7 +507,9 @@ class HomeFragment : Fragment() {
                     dataList[listID].isVisible = item.isVisible
                     dataList[listID].lastChanged = item.lastChanged
                     adapter.notifyItemChanged(listID)
+                    //id++
                 }
+
             }
         }
     }
@@ -183,7 +529,7 @@ class HomeFragment : Fragment() {
         if (dataList.size!=STORAGE.LIST_LIMIT){
             for (i in 0 until STORAGE.LIST_LIMIT){
                 val newItem = ListItem(i+1,"", "", todayDate, 0L, false,
-                    false, 0, false, false)
+                    false, 0, false, false, false)
                 dataList.add(i, newItem)
             }
             adapter.notifyDataSetChanged()
@@ -223,7 +569,9 @@ class HomeFragment : Fragment() {
                     database.getDaoTodayList().insertItem(item)
                 }
                 database.getDaoSetupData().setSettings("DatabaseTodayListAlreadyCreated",1)
+
             }
+
         }
     }
 
@@ -239,6 +587,7 @@ class HomeFragment : Fragment() {
                         "isStop: ${item.isStop} isVisible: ${item.isVisible} " +
                         "lastChanged: ${item.lastChanged}")
             }
+
         }
     }
 
@@ -303,6 +652,7 @@ class HomeFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         startPolling()
+        adapter.startDataSaveTimer()
     }
 
     override fun onPause() {
@@ -311,6 +661,7 @@ class HomeFragment : Fragment() {
             saveDataInTableTodayList()
         }
         stopPolling()
+        adapter.stopDataSaveTimer()
     }
 
     override fun onDestroyView() {
@@ -320,6 +671,7 @@ class HomeFragment : Fragment() {
         }
         _binding = null
         stopPolling()
+        adapter.stopDataSaveTimer()
     }
 
     private fun startPolling() {
@@ -409,6 +761,11 @@ class HomeFragment : Fragment() {
     }
 
 }
+
+ */
+
+ // -----------------------------------------------------------------------------------------------
+
     /*
 
     private lateinit var adapter: ListAdapter

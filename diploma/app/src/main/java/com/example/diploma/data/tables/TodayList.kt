@@ -19,9 +19,5 @@ data class TodayList(
     @ColumnInfo(name = "isPlaying")
     var isPlaying: Boolean,
     @ColumnInfo(name = "isStop")
-    var isStop: Boolean,
-    @ColumnInfo(name = "isVisible")
-    var isVisible: Boolean,
-    @ColumnInfo(name = "lastChanged")
-    var lastChanged: Boolean
+    var isStop: Boolean
 )

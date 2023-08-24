@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "342440be3a42a63fdf2ecd66b66a2cb5",
+    "identityHash": "9ae9bac2c44236d6549dd68791055a97",
     "entities": [
       {
         "tableName": "all_tasks_by_all_time",
@@ -62,7 +62,7 @@
       },
       {
         "tableName": "today_list",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `task` TEXT NOT NULL, `description` TEXT NOT NULL, `time` INTEGER NOT NULL, `status` INTEGER NOT NULL, `isPlaying` INTEGER NOT NULL, `isStop` INTEGER NOT NULL, `isVisible` INTEGER NOT NULL, `lastChanged` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `task` TEXT NOT NULL, `description` TEXT NOT NULL, `time` INTEGER NOT NULL, `status` INTEGER NOT NULL, `isPlaying` INTEGER NOT NULL, `isStop` INTEGER NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -103,18 +103,6 @@
           {
             "fieldPath": "isStop",
             "columnName": "isStop",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "isVisible",
-            "columnName": "isVisible",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "lastChanged",
-            "columnName": "lastChanged",
             "affinity": "INTEGER",
             "notNull": true
           }
@@ -164,7 +152,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '342440be3a42a63fdf2ecd66b66a2cb5')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9ae9bac2c44236d6549dd68791055a97')"
     ]
   }
 }

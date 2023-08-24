@@ -9,7 +9,7 @@
         android:layout_height="180dp"
         android:scaleType="centerCrop"
         android:layout_gravity="center"
-        app:srcCompat="@drawable/alert_bcg2" />
+        app:srcCompat="@drawable/alert_bcg3" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -23,14 +23,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:textSize="32sp"
+            android:layout_margin="5dp"
+            android:background="@color/alertDialog_clc13"
             android:paddingStart="80dp"
             android:paddingEnd="80dp"
-            android:background="@color/alertDialog_clc7"
+            android:text="@string/confirm_delete"
             android:textAlignment="center"
-            android:layout_margin="5dp"
             android:textColor="@color/alertDialog_clc9"
-            android:text="@string/confirm_delete" />
+            android:textSize="32sp"
+            android:textStyle="italic" />
 
         <ImageView
             android:id="@+id/imageView2"
